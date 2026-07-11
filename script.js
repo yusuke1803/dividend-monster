@@ -59,7 +59,11 @@ const stockDialogTitle =
 
 const stockSubmitButton =
   document.getElementById("stockSubmitButton");
+const stockCodeInput =
+  document.getElementById("stockCode");
 
+const stockSuggestions =
+  document.getElementById("stockSuggestions");
 document
   .getElementById("openStockFormButton")
   .addEventListener("click", openNewStockDialog);
@@ -247,6 +251,7 @@ async function loadStockDatabase() {
 
     stockDatabase =
       await response.json();
+    renderStockSuggestions();
   } catch (error) {
     console.error(
       "銘柄データの読み込みに失敗しました。",
@@ -260,7 +265,21 @@ async function loadStockDatabase() {
     );
   }
 }
+function renderStockSuggestions() {
+  if (!stockSuggestions) {
+    return;
+  }
 
+  stockSuggestions.innerHTML =
+    Object.entries(stockDatabase)
+      .map(([code, stock]) => `
+        <option
+          value="${escapeHtml(code)}"
+          label="${escapeHtml(stock.name)}"
+        ></option>
+      `)
+      .join("");
+}
 stockForm.addEventListener(
   "submit",
   (event) => {
@@ -299,8 +318,25 @@ stockForm.addEventListener(
       return;
     }
 
-    const stockInfo =
-      stockDatabase[code];
+    let resolvedCode = code;
+
+let stockInfo =
+  stockDatabase[resolvedCode];
+
+if (!stockInfo) {
+  const matchedEntry =
+    Object.entries(stockDatabase)
+      .find(([, stock]) =>
+        String(stock.name)
+          .toUpperCase()
+          .includes(code)
+      );
+
+  if (matchedEntry) {
+    resolvedCode = matchedEntry[0];
+    stockInfo = matchedEntry[1];
+  }
+}
 
     if (!stockInfo) {
       showStockError(
@@ -324,7 +360,7 @@ stockForm.addEventListener(
         editingStockId ||
         createId(),
 
-      code,
+      code: resolvedCode,
       name: stockInfo.name,
       shares,
 
