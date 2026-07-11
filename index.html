@@ -352,11 +352,14 @@
   </span>
 
   <input
-    id="stockCode"
-    type="text"
-    placeholder="9433 / SPYD / FEPI"
-    autocomplete="off"
-    required>
+  id="stockCode"
+  type="text"
+  placeholder="コードまたは銘柄名"
+  autocomplete="off"
+  list="stockSuggestions"
+  required>
+
+<datalist id="stockSuggestions"></datalist>
 
 </label>
 
