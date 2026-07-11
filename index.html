@@ -2,16 +2,40 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>配当モンスター</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <h1>🥚 配当モンスター</h1>
-  <h2>タマゴン Lv.1</h2>
+  <main class="game">
+    <h1>配当モンスター</h1>
 
-  <p>EXP：0 / 500</p>
-  <p>累計配当：0円</p>
+    <section class="monster-card">
+      <div id="monster">🥚</div>
+      <h2 id="monsterName">タマゴン Lv.1</h2>
+      <p id="stageText">配当を集めてモンスターを育てよう！</p>
+    </section>
 
-  <button>配当をあげる</button>
+    <section class="status-card">
+      <p>💰 所持金</p>
+      <strong><span id="money">0</span>円</strong>
+
+      <p>💵 5秒ごとの配当</p>
+      <strong>+<span id="dividend">100</span>円</strong>
+    </section>
+
+    <button id="collectButton">配当を受け取る</button>
+
+    <section class="progress-card">
+      <p>次の進化まで</p>
+      <div class="progress-bar">
+        <div id="progress"></div>
+      </div>
+      <p><span id="currentMoney">0</span> / <span id="nextEvolution">500</span>円</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>
