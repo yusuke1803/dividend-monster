@@ -14,6 +14,13 @@ const stockSort = document.getElementById("stockSort");
 
 const totalAnnualDividend =
   document.getElementById("totalAnnualDividend");
+const totalDividend =
+  calculateAnnualDividend();
+
+const ratio =
+  totalDividend > 0
+    ? annualDividend / totalDividend * 100
+    : 0;
 
 const monthlyDividend =
   document.getElementById("monthlyDividend");
@@ -780,6 +787,23 @@ function renderPortfolio() {
               </strong>
 
             </div>
+            <div class="stock-ratio">
+
+  <div class="ratio-track">
+
+    <div
+      class="ratio-bar"
+      style="width:${ratio}%">
+    </div>
+
+  </div>
+
+  <small>
+    ポートフォリオ比率
+    ${formatPercent(ratio)}%
+  </small>
+
+</div>
 
             <div class="stock-actions">
 
