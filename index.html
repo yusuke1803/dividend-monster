@@ -2,39 +2,309 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>配当モンスター</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <meta
+    name="description"
+    content="保有銘柄の年間配当と生活費カバー率を視覚化するアプリ"
+  >
+  <title>Dividend Monsters</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <main class="game">
-    <h1>配当モンスター</h1>
+  <header class="app-header">
+    <div>
+      <p class="brand-label">DIVIDEND MONSTERS</p>
+      <h1>配当を、育てよう。</h1>
+    </div>
 
-    <section class="monster-card">
-      <div id="monster">🥚</div>
-      <h2 id="monsterName">タマゴン Lv.1</h2>
-      <p id="stageText">配当を集めてモンスターを育てよう！</p>
-    </section>
+    <button
+      id="openStockFormButton"
+      class="header-button"
+      type="button"
+    >
+      ＋ 銘柄
+    </button>
+  </header>
 
-    <section class="status-card">
-      <p>💰 所持金</p>
-      <strong><span id="money">0</span>円</strong>
+  <main class="app-container">
+    <section class="summary-card">
+      <p class="section-label">年間配当見込み</p>
 
-      <p>💵 5秒ごとの配当</p>
-      <strong>+<span id="dividend">100</span>円</strong>
-    </section>
+      <p class="annual-dividend">
+        ¥<span id="totalAnnualDividend">0</span>
+      </p>
 
-    <button id="collectButton">配当を受け取る</button>
+      <div class="summary-grid">
+        <div>
+          <span>月平均</span>
+          <strong>
+            ¥<span id="monthlyDividend">0</span>
+          </strong>
+        </div>
 
-    <section class="progress-card">
-      <p>次の進化まで</p>
-      <div class="progress-bar">
-        <div id="progress"></div>
+        <div>
+          <span>生活費カバー率</span>
+          <strong>
+            <span id="freedomRate">0</span>%
+          </strong>
+        </div>
       </div>
-      <p><span id="currentMoney">0</span> / <span id="nextEvolution">500</span>円</p>
+
+      <div class="freedom-track">
+        <div id="freedomBar" class="freedom-bar"></div>
+      </div>
+
+      <p id="freedomMessage" class="freedom-message">
+        生活費を登録すると、配当で支えられる割合が表示されます。
+      </p>
+    </section>
+
+    <section class="content-section">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">PORTFOLIO CREATURES</p>
+          <h2>あなたの軍団</h2>
+        </div>
+
+        <span id="stockCount" class="count-badge">0体</span>
+      </div>
+
+      <div id="stockList" class="stock-list">
+        <div class="empty-state">
+          <div class="empty-orb"></div>
+          <h3>まだ軍団はいません</h3>
+          <p>
+            銘柄・株数・1株配当を登録すると、配当を表す個体が誕生します。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <div class="section-heading">
+        <div>
+          <p class="section-label">LIFE COVERAGE</p>
+          <h2>生活クエスト</h2>
+        </div>
+
+        <button
+          id="openExpenseFormButton"
+          class="text-button"
+          type="button"
+        >
+          編集
+        </button>
+      </div>
+
+      <div id="expenseList" class="expense-list">
+        <div class="empty-state compact">
+          <h3>生活費を登録してください</h3>
+          <p>
+            家賃、食費、光熱費などを配当でどこまで支えられるか計算します。
+          </p>
+        </div>
+      </div>
     </section>
   </main>
+
+  <nav class="bottom-nav" aria-label="メインメニュー">
+    <button class="nav-item active" type="button">
+      <span class="nav-icon">◆</span>
+      <span>ホーム</span>
+    </button>
+
+    <button class="nav-item" type="button" disabled>
+      <span class="nav-icon">◇</span>
+      <span>図鑑</span>
+    </button>
+
+    <button class="nav-item" type="button" disabled>
+      <span class="nav-icon">◎</span>
+      <span>クエスト</span>
+    </button>
+  </nav>
+
+  <dialog id="stockDialog" class="app-dialog">
+    <form id="stockForm" method="dialog">
+      <div class="dialog-header">
+        <div>
+          <p class="section-label">NEW CREATURE</p>
+          <h2>銘柄を追加</h2>
+        </div>
+
+        <button
+          class="close-button"
+          type="button"
+          data-close-dialog="stockDialog"
+          aria-label="閉じる"
+        >
+          ×
+        </button>
+      </div>
+
+      <label>
+        銘柄名
+        <input
+          id="stockName"
+          name="stockName"
+          type="text"
+          placeholder="例：KDDI"
+          maxlength="30"
+          required
+        >
+      </label>
+
+      <label>
+        保有株数
+        <input
+          id="shareCount"
+          name="shareCount"
+          type="number"
+          placeholder="例：10000"
+          min="0"
+          step="0.0001"
+          required
+        >
+      </label>
+
+      <label>
+        1株あたり年間配当
+        <div class="input-with-unit">
+          <input
+            id="dividendPerShare"
+            name="dividendPerShare"
+            type="number"
+            placeholder="例：100"
+            min="0"
+            step="0.01"
+            required
+          >
+          <span>円</span>
+        </div>
+      </label>
+
+      <label>
+        属性
+        <select id="stockType" name="stockType">
+          <option value="communication">通信</option>
+          <option value="finance">金融</option>
+          <option value="trading">商社</option>
+          <option value="reit">REIT</option>
+          <option value="etf">ETF</option>
+          <option value="technology">テクノロジー</option>
+          <option value="energy">エネルギー</option>
+          <option value="other">その他</option>
+        </select>
+      </label>
+
+      <button class="primary-button" type="submit">
+        軍団に追加する
+      </button>
+    </form>
+  </dialog>
+
+  <dialog id="expenseDialog" class="app-dialog">
+    <form id="expenseForm" method="dialog">
+      <div class="dialog-header">
+        <div>
+          <p class="section-label">LIFE SETTINGS</p>
+          <h2>毎月の生活費</h2>
+        </div>
+
+        <button
+          class="close-button"
+          type="button"
+          data-close-dialog="expenseDialog"
+          aria-label="閉じる"
+        >
+          ×
+        </button>
+      </div>
+
+      <label>
+        住居費
+        <div class="input-with-unit">
+          <input
+            id="housingExpense"
+            name="housingExpense"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+          <span>円／月</span>
+        </div>
+      </label>
+
+      <label>
+        食費
+        <div class="input-with-unit">
+          <input
+            id="foodExpense"
+            name="foodExpense"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+          <span>円／月</span>
+        </div>
+      </label>
+
+      <label>
+        光熱費
+        <div class="input-with-unit">
+          <input
+            id="utilityExpense"
+            name="utilityExpense"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+          <span>円／月</span>
+        </div>
+      </label>
+
+      <label>
+        通信費
+        <div class="input-with-unit">
+          <input
+            id="communicationExpense"
+            name="communicationExpense"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+          <span>円／月</span>
+        </div>
+      </label>
+
+      <label>
+        その他
+        <div class="input-with-unit">
+          <input
+            id="otherExpense"
+            name="otherExpense"
+            type="number"
+            min="0"
+            step="1"
+            value="0"
+          >
+          <span>円／月</span>
+        </div>
+      </label>
+
+      <button class="primary-button" type="submit">
+        生活費を保存する
+      </button>
+    </form>
+  </dialog>
 
   <script src="script.js"></script>
 </body>
