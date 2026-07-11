@@ -1,1 +1,65 @@
-
+{
+  "9433": {
+    "ticker": "9433",
+    "name": "KDDI",
+    "market": "JP",
+    "sector": "communication",
+    "annualDividendPerShare": 80,
+    "currency": "JPY",
+    "dataStatus": "sample"
+  },
+  "9432": {
+    "ticker": "9432",
+    "name": "NTT",
+    "market": "JP",
+    "sector": "communication",
+    "annualDividendPerShare": 5.3,
+    "currency": "JPY",
+    "dataStatus": "sample"
+  },
+  "8593": {
+    "ticker": "8593",
+    "name": "三菱HCキャピタル",
+    "market": "JP",
+    "sector": "finance",
+    "annualDividendPerShare": 40,
+    "currency": "JPY",
+    "dataStatus": "sample"
+  },
+  "1605": {
+    "ticker": "1605",
+    "name": "INPEX",
+    "market": "JP",
+    "sector": "energy",
+    "annualDividendPerShare": 90,
+    "currency": "JPY",
+    "dataStatus": "sample"
+  },
+  "2865": {
+    "ticker": "2865",
+    "name": "グローバルX NASDAQ100・カバード・コール ETF",
+    "market": "JP",
+    "sector": "etf",
+    "annualDividendPerShare": 0,
+    "currency": "JPY",
+    "dataStatus": "manual-required"
+  },
+  "SPYD": {
+    "ticker": "SPYD",
+    "name": "SPDR Portfolio S&P 500 High Dividend ETF",
+    "market": "US",
+    "sector": "etf",
+    "annualDividendPerShare": 0,
+    "currency": "USD",
+    "dataStatus": "manual-required"
+  },
+  "FEPI": {
+    "ticker": "FEPI",
+    "name": "REX FANG & Innovation Equity Premium Income ETF",
+    "market": "US",
+    "sector": "etf",
+    "annualDividendPerShare": 0,
+    "currency": "USD",
+    "dataStatus": "manual-required"
+  }
+}
