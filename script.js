@@ -1,113 +1,534 @@
-const savedGame = JSON.parse(localStorage.getItem("dividendMonsterSave"));
-
-const game = savedGame || {
-  money: 0,
-  dividend: 100
+const STORAGE_KEYS = {
+  stocks: "dividendMonstersStocks",
+  expenses: "dividendMonstersExpenses"
 };
 
-const evolutions = [
-  {
-    money: 0,
-    emoji: "🥚",
-    name: "タマゴン Lv.1",
-    message: "配当を集めてモンスターを育てよう！"
-  },
-  {
-    money: 500,
-    emoji: "🐣",
-    name: "ヒヨコ Lv.2",
-    message: "小さなモンスターが誕生した！"
-  },
-  {
-    money: 1500,
-    emoji: "🐺",
-    name: "オオカミ Lv.3",
-    message: "配当の力でたくましく成長した！"
-  },
-  {
-    money: 3000,
-    emoji: "🐉",
-    name: "ドラゴン Lv.4",
-    message: "ついに伝説のドラゴンへ進化！"
-  },
-  {
-    money: 6000,
-    emoji: "👑",
-    name: "キングモンスター Lv.5",
-    message: "配当モンスターの王になった！"
+const stockTypeLabels = {
+  communication: "通信",
+  finance: "金融",
+  trading: "商社",
+  reit: "REIT",
+  etf: "ETF",
+  technology: "テクノロジー",
+  energy: "エネルギー",
+  other: "その他"
+};
+
+const defaultExpenses = {
+  housing: 0,
+  food: 0,
+  utility: 0,
+  communication: 0,
+  other: 0
+};
+
+let stocks = loadData(STORAGE_KEYS.stocks, []);
+let expenses = loadData(STORAGE_KEYS.expenses, defaultExpenses);
+
+const totalAnnualDividendElement =
+  document.getElementById("totalAnnualDividend");
+const monthlyDividendElement =
+  document.getElementById("monthlyDividend");
+const freedomRateElement =
+  document.getElementById("freedomRate");
+const freedomBarElement =
+  document.getElementById("freedomBar");
+const freedomMessageElement =
+  document.getElementById("freedomMessage");
+const stockCountElement =
+  document.getElementById("stockCount");
+const stockListElement =
+  document.getElementById("stockList");
+const expenseListElement =
+  document.getElementById("expenseList");
+
+const stockDialog =
+  document.getElementById("stockDialog");
+const expenseDialog =
+  document.getElementById("expenseDialog");
+
+const stockForm =
+  document.getElementById("stockForm");
+const expenseForm =
+  document.getElementById("expenseForm");
+
+document
+  .getElementById("openStockFormButton")
+  .addEventListener("click", () => {
+    stockDialog.showModal();
+  });
+
+document
+  .getElementById("openExpenseFormButton")
+  .addEventListener("click", () => {
+    fillExpenseForm();
+    expenseDialog.showModal();
+  });
+
+document
+  .querySelectorAll("[data-close-dialog]")
+  .forEach((button) => {
+    button.addEventListener("click", () => {
+      const dialogId =
+        button.getAttribute("data-close-dialog");
+
+      document.getElementById(dialogId).close();
+    });
+  });
+
+stockForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const name =
+    document.getElementById("stockName").value.trim();
+  const shares =
+    Number(document.getElementById("shareCount").value);
+  const dividendPerShare =
+    Number(
+      document.getElementById("dividendPerShare").value
+    );
+  const type =
+    document.getElementById("stockType").value;
+
+  if (
+    !name ||
+    !Number.isFinite(shares) ||
+    !Number.isFinite(dividendPerShare) ||
+    shares < 0 ||
+    dividendPerShare < 0
+  ) {
+    alert("入力内容を確認してください。");
+    return;
   }
-];
 
-const moneyElement = document.getElementById("money");
-const dividendElement = document.getElementById("dividend");
-const currentMoneyElement = document.getElementById("currentMoney");
-const nextEvolutionElement = document.getElementById("nextEvolution");
-const monsterElement = document.getElementById("monster");
-const monsterNameElement = document.getElementById("monsterName");
-const stageTextElement = document.getElementById("stageText");
-const progressElement = document.getElementById("progress");
-const collectButton = document.getElementById("collectButton");
+  stocks.push({
+    id: crypto.randomUUID
+      ? crypto.randomUUID()
+      : String(Date.now()),
+    name,
+    shares,
+    dividendPerShare,
+    type
+  });
 
-collectButton.addEventListener("click", collectDividend);
+  saveData(STORAGE_KEYS.stocks, stocks);
+  stockForm.reset();
+  stockDialog.close();
+  render();
+});
 
-function collectDividend() {
-  game.money += game.dividend;
-  updateGame();
-  saveGame();
+expenseForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  expenses = {
+    housing: getNonNegativeNumber("housingExpense"),
+    food: getNonNegativeNumber("foodExpense"),
+    utility: getNonNegativeNumber("utilityExpense"),
+    communication:
+      getNonNegativeNumber("communicationExpense"),
+    other: getNonNegativeNumber("otherExpense")
+  };
+
+  saveData(STORAGE_KEYS.expenses, expenses);
+  expenseDialog.close();
+  render();
+});
+
+function render() {
+  renderSummary();
+  renderStocks();
+  renderExpenses();
 }
 
-function updateGame() {
-  moneyElement.textContent = game.money.toLocaleString();
-  dividendElement.textContent = game.dividend.toLocaleString();
-  currentMoneyElement.textContent = game.money.toLocaleString();
+function renderSummary() {
+  const totalAnnualDividend =
+    calculateTotalAnnualDividend();
 
-  let currentEvolution = evolutions[0];
-  let nextEvolution = null;
+  const monthlyDividend =
+    totalAnnualDividend / 12;
 
-  for (const evolution of evolutions) {
-    if (game.money >= evolution.money) {
-      currentEvolution = evolution;
-    } else {
-      nextEvolution = evolution;
-      break;
-    }
+  const annualExpenses =
+    calculateMonthlyExpensesTotal() * 12;
+
+  const freedomRate =
+    annualExpenses > 0
+      ? (totalAnnualDividend / annualExpenses) * 100
+      : 0;
+
+  totalAnnualDividendElement.textContent =
+    formatNumber(totalAnnualDividend);
+
+  monthlyDividendElement.textContent =
+    formatNumber(monthlyDividend);
+
+  freedomRateElement.textContent =
+    formatPercent(freedomRate);
+
+  freedomBarElement.style.width =
+    Math.min(freedomRate, 100) + "%";
+
+  freedomMessageElement.textContent =
+    createFreedomMessage(
+      totalAnnualDividend,
+      annualExpenses,
+      freedomRate
+    );
+}
+
+function renderStocks() {
+  stockCountElement.textContent =
+    `${stocks.length}体`;
+
+  if (stocks.length === 0) {
+    stockListElement.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-orb"></div>
+        <h3>まだ軍団はいません</h3>
+        <p>
+          銘柄・株数・1株配当を登録すると、
+          配当を表す個体が誕生します。
+        </p>
+      </div>
+    `;
+    return;
   }
 
-  monsterElement.textContent = currentEvolution.emoji;
-  monsterNameElement.textContent = currentEvolution.name;
-  stageTextElement.textContent = currentEvolution.message;
+  const sortedStocks = [...stocks].sort(
+    (a, b) =>
+      calculateStockDividend(b) -
+      calculateStockDividend(a)
+  );
 
-  if (nextEvolution) {
-    nextEvolutionElement.textContent =
-      nextEvolution.money.toLocaleString();
+  stockListElement.innerHTML =
+    sortedStocks
+      .map((stock) => {
+        const annualDividend =
+          calculateStockDividend(stock);
 
-    const currentStart = currentEvolution.money;
-    const requiredAmount = nextEvolution.money - currentStart;
-    const earnedAmount = game.money - currentStart;
-    const progressPercent = Math.min(
-      (earnedAmount / requiredAmount) * 100,
-      100
+        return `
+          <article class="stock-card">
+            <div
+              class="creature-mark"
+              aria-hidden="true"
+            ></div>
+
+            <div>
+              <h3>${escapeHtml(stock.name)}</h3>
+
+              <div class="stock-meta">
+                <span>
+                  ${formatNumber(stock.shares)}株
+                </span>
+
+                <span>
+                  1株配当
+                  ¥${formatNumber(
+                    stock.dividendPerShare
+                  )}
+                </span>
+
+                <span>
+                  ${
+                    stockTypeLabels[stock.type] ||
+                    stockTypeLabels.other
+                  }
+                </span>
+              </div>
+            </div>
+
+            <div class="stock-dividend">
+              <span>年間配当</span>
+              <strong>
+                ¥${formatNumber(annualDividend)}
+              </strong>
+            </div>
+
+            <button
+              class="delete-stock-button"
+              type="button"
+              data-delete-stock="${stock.id}"
+            >
+              削除
+            </button>
+          </article>
+        `;
+      })
+      .join("");
+
+  document
+    .querySelectorAll("[data-delete-stock]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        const stockId =
+          button.getAttribute("data-delete-stock");
+
+        const targetStock =
+          stocks.find(
+            (stock) => stock.id === stockId
+          );
+
+        if (!targetStock) {
+          return;
+        }
+
+        const confirmed = confirm(
+          `${targetStock.name}を削除しますか？`
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        stocks = stocks.filter(
+          (stock) => stock.id !== stockId
+        );
+
+        saveData(STORAGE_KEYS.stocks, stocks);
+        render();
+      });
+    });
+}
+
+function renderExpenses() {
+  const expenseItems = [
+    {
+      key: "housing",
+      label: "住居費"
+    },
+    {
+      key: "food",
+      label: "食費"
+    },
+    {
+      key: "utility",
+      label: "光熱費"
+    },
+    {
+      key: "communication",
+      label: "通信費"
+    },
+    {
+      key: "other",
+      label: "その他"
+    }
+  ];
+
+  const activeExpenses =
+    expenseItems.filter(
+      (item) => expenses[item.key] > 0
     );
 
-    progressElement.style.width = progressPercent + "%";
-  } else {
-    nextEvolutionElement.textContent = "進化完了";
-    progressElement.style.width = "100%";
+  if (activeExpenses.length === 0) {
+    expenseListElement.innerHTML = `
+      <div class="empty-state compact">
+        <h3>生活費を登録してください</h3>
+        <p>
+          家賃、食費、光熱費などを
+          配当でどこまで支えられるか計算します。
+        </p>
+      </div>
+    `;
+    return;
   }
+
+  const totalAnnualDividend =
+    calculateTotalAnnualDividend();
+
+  let remainingDividend =
+    totalAnnualDividend;
+
+  expenseListElement.innerHTML =
+    activeExpenses
+      .map((item) => {
+        const annualExpense =
+          expenses[item.key] * 12;
+
+        const coveredAmount =
+          Math.min(
+            remainingDividend,
+            annualExpense
+          );
+
+        const coverageRate =
+          annualExpense > 0
+            ? (coveredAmount / annualExpense) * 100
+            : 0;
+
+        remainingDividend =
+          Math.max(
+            remainingDividend - annualExpense,
+            0
+          );
+
+        return `
+          <article class="expense-card">
+            <div class="expense-top">
+              <h3>${item.label}</h3>
+
+              <strong>
+                ${formatPercent(coverageRate)}%
+              </strong>
+            </div>
+
+            <div class="expense-values">
+              年間
+              ¥${formatNumber(annualExpense)}
+              のうち
+              ¥${formatNumber(coveredAmount)}
+            </div>
+
+            <div class="expense-track">
+              <div
+                class="expense-progress"
+                style="width:
+                  ${Math.min(
+                    coverageRate,
+                    100
+                  )}%"
+              ></div>
+            </div>
+          </article>
+        `;
+      })
+      .join("");
 }
 
-function saveGame() {
-  localStorage.setItem(
-    "dividendMonsterSave",
-    JSON.stringify(game)
+function calculateStockDividend(stock) {
+  return stock.shares *
+    stock.dividendPerShare;
+}
+
+function calculateTotalAnnualDividend() {
+  return stocks.reduce(
+    (total, stock) =>
+      total + calculateStockDividend(stock),
+    0
   );
 }
 
-// 5秒ごとに自動で配当を受け取る
-setInterval(() => {
-  game.money += game.dividend;
-  updateGame();
-  saveGame();
-}, 5000);
+function calculateMonthlyExpensesTotal() {
+  return Object.values(expenses).reduce(
+    (total, value) =>
+      total + Number(value || 0),
+    0
+  );
+}
 
-updateGame();
+function createFreedomMessage(
+  totalAnnualDividend,
+  annualExpenses,
+  freedomRate
+) {
+  if (annualExpenses <= 0) {
+    return "生活費を登録すると、配当で支えられる割合が表示されます。";
+  }
+
+  if (totalAnnualDividend <= 0) {
+    return "銘柄を登録すると、生活費カバー率が計算されます。";
+  }
+
+  if (freedomRate >= 100) {
+    const surplus =
+      totalAnnualDividend - annualExpenses;
+
+    return `年間生活費を100%カバーしています。余剰配当は約¥${formatNumber(
+      surplus
+    )}です。`;
+  }
+
+  const remaining =
+    annualExpenses - totalAnnualDividend;
+
+  return `年間生活費100%まで、あと約¥${formatNumber(
+    remaining
+  )}です。`;
+}
+
+function fillExpenseForm() {
+  document.getElementById(
+    "housingExpense"
+  ).value = expenses.housing;
+
+  document.getElementById(
+    "foodExpense"
+  ).value = expenses.food;
+
+  document.getElementById(
+    "utilityExpense"
+  ).value = expenses.utility;
+
+  document.getElementById(
+    "communicationExpense"
+  ).value = expenses.communication;
+
+  document.getElementById(
+    "otherExpense"
+  ).value = expenses.other;
+}
+
+function getNonNegativeNumber(elementId) {
+  const value =
+    Number(
+      document.getElementById(elementId).value
+    );
+
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  return value;
+}
+
+function formatNumber(value) {
+  return Math.round(value).toLocaleString("ja-JP");
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+
+  if (value >= 100) {
+    return "100";
+  }
+
+  return value.toFixed(1);
+}
+
+function saveData(key, value) {
+  localStorage.setItem(
+    key,
+    JSON.stringify(value)
+  );
+}
+
+function loadData(key, fallbackValue) {
+  try {
+    const storedValue =
+      localStorage.getItem(key);
+
+    if (!storedValue) {
+      return fallbackValue;
+    }
+
+    return JSON.parse(storedValue);
+  } catch (error) {
+    console.error(
+      "保存データの読み込みに失敗しました。",
+      error
+    );
+
+    return fallbackValue;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+render();
