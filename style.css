@@ -988,3 +988,18 @@ button{
   }
 
 }
+.stock-preview{
+
+  margin-top:8px;
+
+  color:var(--primary-dark);
+
+  font-size:14px;
+
+  line-height:1.6;
+
+  font-weight:600;
+
+  min-height:42px;
+
+}
