@@ -518,12 +518,23 @@ button{
 
   border-radius:18px;
 
-  background:
+  background:linear-gradient(
+    135deg,
+    var(--primary-light),
+    #bdd9ce
+  );
 
-  linear-gradient(
-  135deg,
-  var(--primary-light),
-  #bdd9ce);
+  display:flex;
+
+  justify-content:center;
+
+  align-items:center;
+
+  font-size:20px;
+
+  font-weight:800;
+
+  color:var(--primary-dark);
 
 }
 
