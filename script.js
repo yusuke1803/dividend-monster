@@ -284,74 +284,7 @@ function renderStockSuggestions() {
       `)
       .join("");
 }
-stockCodeInput.addEventListener("input", () => {
-  const keyword =
-    stockCodeInput.value
-      .trim()
-      .toUpperCase();
 
-  if (!keyword) {
-    stockPreview.textContent = "";
-    return;
-  }
-
-  let matchedCode = keyword;
-
-  let stock =
-    stockDatabase[matchedCode];
-
-  if (!stock) {
-    const matchedEntry =
-      Object.entries(stockDatabase)
-        .find(([, item]) =>
-          String(item.name)
-            .toUpperCase()
-            .includes(keyword)
-        );
-
-    if (matchedEntry) {
-      matchedCode =
-        matchedEntry[0];
-
-      stock =
-        matchedEntry[1];
-    }
-  }
-
-  if (!stock) {
-    stockPreview.textContent =
-      "銘柄が見つかりません";
-
-    return;
-  }
-
-  const dividend =
-    Number(
-      stock.annualDividendPerShare
-    );
-
-  const dividendText =
-    stock.dataStatus ===
-    "manual-required"
-      ? "配当データ未登録"
-      : `1株あたり年間配当：${formatYen(
-          dividend
-        )} ${
-          stock.currency || "JPY"
-        }`;
-
-  stockPreview.innerHTML = `
-    <strong>${escapeHtml(
-      stock.name
-    )}</strong><br>
-    コード：${escapeHtml(
-      matchedCode
-    )}<br>
-    ${escapeHtml(
-      dividendText
-    )}
-  `;
-});
 stockForm.addEventListener(
   "submit",
   (event) => {
@@ -1110,4 +1043,4 @@ async function initializeApp() {
 }
 
 initializeApp();
-<script src="script.js?v=4"></script>
+
