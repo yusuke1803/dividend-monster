@@ -570,7 +570,8 @@ function formatPercent(value) {
 function updateDashboard() {
   const annualDividend =
     calculateAnnualDividend();
-
+const totalValue =
+  calculatePortfolioValue();
   const monthlyDividendValue =
     annualDividend / 12;
 
