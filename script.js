@@ -68,6 +68,23 @@ const stockSuggestions =
   document.getElementById("stockSuggestions");
 const stockPreview =
   document.getElementById("stockPreview");
+const monsterName =
+  document.getElementById("monsterName");
+
+const monsterLevel =
+  document.getElementById("monsterLevel");
+
+const monsterExp =
+  document.getElementById("monsterExp");
+
+const monsterNextExp =
+  document.getElementById("monsterNextExp");
+
+const monsterExpBar =
+  document.getElementById("monsterExpBar");
+
+const monsterImage =
+  document.querySelector(".monster-image");
 document
   .getElementById("openStockFormButton")
   .addEventListener("click", openNewStockDialog);
