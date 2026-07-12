@@ -385,15 +385,15 @@ if (!stockInfo) {
         stockInfo.market ||
         "JP",
 
-      currency:
-        stockInfo.currency ||
-        "JPY",
-      　price:
+    currency:
+  stockInfo.currency ||
+  "JPY",
 
+price:
   Number(
-
     stockInfo.currentPrice || 0
-    };
+  )
+};
 
     if (editingStockId) {
       portfolio =
