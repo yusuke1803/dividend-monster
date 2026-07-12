@@ -97,7 +97,6 @@ async function loadStockDatabase(){
 // ========================================
 // Save
 // ========================================
-
 function saveData(){
 
     localStorage.setItem(
@@ -114,6 +113,8 @@ function saveData(){
 
             harvestedDividends,
 
+            upcomingDividends,
+
             monster,
 
             settings
@@ -123,7 +124,6 @@ function saveData(){
     );
 
 }
-
 // ========================================
 // Load
 // ========================================
@@ -148,11 +148,13 @@ function loadData(){
 
     dividendHistory=data.dividendHistory||[];
 
-    harvestedDividends=data.harvestedDividends||[];
+harvestedDividends=data.harvestedDividends||[];
 
-    monster=data.monster||monster;
+upcomingDividends=data.upcomingDividends||[];
 
-    settings=data.settings||settings;
+monster=data.monster||monster;
+
+settings=data.settings||settings;
 
 }
 // ========================================
@@ -338,6 +340,16 @@ function renderDashboard() {
 // ========================================
 
 function generateUpcomingDividends() {
+
+    const previousHarvest = new Set(
+
+        harvestedDividends.map(item =>
+
+            `${item.code}_${item.paymentDate}`
+
+        )
+
+    );
 
     upcomingDividends = [];
 
