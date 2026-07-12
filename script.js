@@ -1116,6 +1116,7 @@ function escapeHtml(value) {
 
 function render() {
   updateDashboard();
+  updateMonster();
   renderPortfolio();
   renderExpenses();
 }
