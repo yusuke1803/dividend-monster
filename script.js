@@ -2633,5 +2633,8 @@ function escapeHtml(
 // ========================================
 // 起動
 // ========================================
-
+clearDividendHistoryButton?.addEventListener(
+  "click",
+  clearDividendHistory
+);
 initializeApp();
