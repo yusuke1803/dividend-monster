@@ -1066,3 +1066,20 @@ button{
     color:#64748b;
     font-size:13px;
 }
+.stock-value {
+  margin-top: 16px;
+}
+
+.stock-value small {
+  display: block;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.stock-value strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f766e;
+}
