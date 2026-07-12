@@ -2628,7 +2628,21 @@ function escapeHtml(
     );
 
 }
+function clearDividendHistory() {
 
+  if (!confirm("配当履歴をすべて削除しますか？")) {
+    return;
+  }
+
+  dividendHistory = [];
+
+  saveData();
+
+  render();
+
+  showToast("配当履歴を削除しました。");
+
+}
 
 // ========================================
 // 起動
