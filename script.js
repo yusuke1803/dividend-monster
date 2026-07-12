@@ -1,118 +1,336 @@
-// Dividend Monsters Ver.2
-// script.js 1/4
+// ========================================
+// Dividend Monsters Ver.3
+// script.js
+// ========================================
 
-const STORAGE_KEY = "dividend-monsters-data-v1";
+const STORAGE_KEY =
+  "dividend-monsters-data-v3";
+
+const OLD_STORAGE_KEY =
+  "dividend-monsters-data-v1";
 
 let portfolio = [];
 let expenses = {};
+let dividendHistory = [];
 let stockDatabase = {};
-let editingStockId = null;
 
-const stockList = document.getElementById("stockList");
-const stockCount = document.getElementById("stockCount");
-const stockSort = document.getElementById("stockSort");
+let editingStockId = null;
+let previousMonsterLevel = 1;
+
+
+// ========================================
+// DOM
+// ========================================
+
+const stockList =
+  document.getElementById("stockList");
+
+const stockCount =
+  document.getElementById("stockCount");
+
+const summaryStockCount =
+  document.getElementById(
+    "summaryStockCount"
+  );
+
+const stockSort =
+  document.getElementById("stockSort");
 
 const totalAnnualDividend =
-  document.getElementById("totalAnnualDividend");
-
+  document.getElementById(
+    "totalAnnualDividend"
+  );
 
 const monthlyDividend =
-  document.getElementById("monthlyDividend");
+  document.getElementById(
+    "monthlyDividend"
+  );
+
 const portfolioValue =
-  document.getElementById("portfolioValue");
+  document.getElementById(
+    "portfolioValue"
+  );
+
 const freedomRate =
-  document.getElementById("freedomRate");
+  document.getElementById(
+    "freedomRate"
+  );
 
 const freedomBar =
-  document.getElementById("freedomBar");
+  document.getElementById(
+    "freedomBar"
+  );
 
 const freedomMessage =
-  document.getElementById("freedomMessage");
+  document.getElementById(
+    "freedomMessage"
+  );
 
 const nextGoalTitle =
-  document.getElementById("nextGoalTitle");
+  document.getElementById(
+    "nextGoalTitle"
+  );
 
 const nextGoalAmount =
-  document.getElementById("nextGoalAmount");
+  document.getElementById(
+    "nextGoalAmount"
+  );
 
 const expenseList =
-  document.getElementById("expenseList");
+  document.getElementById(
+    "expenseList"
+  );
 
-const toast =
-  document.getElementById("toast");
+const dividendCalendar =
+  document.getElementById(
+    "dividendCalendar"
+  );
 
-const stockDialog =
-  document.getElementById("stockDialog");
+const calendarYear =
+  document.getElementById(
+    "calendarYear"
+  );
 
-const expenseDialog =
-  document.getElementById("expenseDialog");
+const dividendHistoryList =
+  document.getElementById(
+    "dividendHistoryList"
+  );
 
-const stockForm =
-  document.getElementById("stockForm");
+const receivedDividendTotal =
+  document.getElementById(
+    "receivedDividendTotal"
+  );
 
-const expenseForm =
-  document.getElementById("expenseForm");
-
-const stockFormError =
-  document.getElementById("stockFormError");
-
-const stockDialogTitle =
-  document.getElementById("stockDialogTitle");
-
-const stockSubmitButton =
-  document.getElementById("stockSubmitButton");
-const stockCodeInput =
-  document.getElementById("stockCode");
-
-const stockSuggestions =
-  document.getElementById("stockSuggestions");
-const stockPreview =
-  document.getElementById("stockPreview");
 const monsterName =
-  document.getElementById("monsterName");
+  document.getElementById(
+    "monsterName"
+  );
 
 const monsterLevel =
-  document.getElementById("monsterLevel");
+  document.getElementById(
+    "monsterLevel"
+  );
 
 const monsterExp =
-  document.getElementById("monsterExp");
+  document.getElementById(
+    "monsterExp"
+  );
 
 const monsterNextExp =
-  document.getElementById("monsterNextExp");
+  document.getElementById(
+    "monsterNextExp"
+  );
 
 const monsterExpBar =
-  document.getElementById("monsterExpBar");
+  document.getElementById(
+    "monsterExpBar"
+  );
+
+const monsterMessage =
+  document.getElementById(
+    "monsterMessage"
+  );
 
 const monsterImage =
-  document.querySelector(".monster-image");
-document
-  .getElementById("openStockFormButton")
-  .addEventListener("click", openNewStockDialog);
+  document.querySelector(
+    ".monster-image"
+  );
+
+const monsterStageEgg =
+  document.getElementById(
+    "monsterStageEgg"
+  );
+
+const monsterStageChick =
+  document.getElementById(
+    "monsterStageChick"
+  );
+
+const monsterStageDragon =
+  document.getElementById(
+    "monsterStageDragon"
+  );
+
+const monsterBookCount =
+  document.getElementById(
+    "monsterBookCount"
+  );
+
+const stockDialog =
+  document.getElementById(
+    "stockDialog"
+  );
+
+const expenseDialog =
+  document.getElementById(
+    "expenseDialog"
+  );
+
+const dividendDialog =
+  document.getElementById(
+    "dividendDialog"
+  );
+
+const levelUpDialog =
+  document.getElementById(
+    "levelUpDialog"
+  );
+
+const stockForm =
+  document.getElementById(
+    "stockForm"
+  );
+
+const expenseForm =
+  document.getElementById(
+    "expenseForm"
+  );
+
+const dividendForm =
+  document.getElementById(
+    "dividendForm"
+  );
+
+const stockCodeInput =
+  document.getElementById(
+    "stockCode"
+  );
+
+const stockSuggestions =
+  document.getElementById(
+    "stockSuggestions"
+  );
+
+const stockPreview =
+  document.getElementById(
+    "stockPreview"
+  );
+
+const stockFormError =
+  document.getElementById(
+    "stockFormError"
+  );
+
+const dividendFormError =
+  document.getElementById(
+    "dividendFormError"
+  );
+
+const stockDialogTitle =
+  document.getElementById(
+    "stockDialogTitle"
+  );
+
+const stockSubmitButton =
+  document.getElementById(
+    "stockSubmitButton"
+  );
+
+const dividendStockCode =
+  document.getElementById(
+    "dividendStockCode"
+  );
+
+const toast =
+  document.getElementById(
+    "toast"
+  );
+
+
+// ========================================
+// ボタン
+// ========================================
 
 document
-  .getElementById("openExpenseFormButton")
-  .addEventListener("click", openExpenseDialog);
+  .getElementById(
+    "openStockFormButton"
+  )
+  .addEventListener(
+    "click",
+    openNewStockDialog
+  );
 
 document
-  .querySelectorAll("[data-close-dialog]")
+  .getElementById(
+    "openExpenseFormButton"
+  )
+  .addEventListener(
+    "click",
+    openExpenseDialog
+  );
+
+document
+  .getElementById(
+    "openDividendFormButton"
+  )
+  .addEventListener(
+    "click",
+    openDividendDialog
+  );
+
+document
+  .getElementById(
+    "openDividendFormHeroButton"
+  )
+  .addEventListener(
+    "click",
+    openDividendDialog
+  );
+
+document
+  .getElementById(
+    "openDividendHistoryButton"
+  )
+  .addEventListener(
+    "click",
+    openDividendDialog
+  );
+
+document
+  .getElementById(
+    "closeLevelUpButton"
+  )
+  .addEventListener(
+    "click",
+    () => {
+      levelUpDialog.close();
+    }
+  );
+
+document
+  .querySelectorAll(
+    "[data-close-dialog]"
+  )
   .forEach((button) => {
-    button.addEventListener("click", () => {
-      const dialogId =
-        button.dataset.closeDialog;
+    button.addEventListener(
+      "click",
+      () => {
+        const dialog =
+          document.getElementById(
+            button.dataset.closeDialog
+          );
 
-      document
-        .getElementById(dialogId)
-        .close();
-    });
+        if (dialog) {
+          dialog.close();
+        }
+      }
+    );
   });
 
-stockSort.addEventListener("change", () => {
-  renderPortfolio();
-});
+stockSort.addEventListener(
+  "change",
+  renderPortfolio
+);
 
-stockDialog.addEventListener("close", () => {
-  resetStockForm();
-});
+stockDialog.addEventListener(
+  "close",
+  resetStockForm
+);
+
+
+// ========================================
+// ダイアログ
+// ========================================
 
 function openNewStockDialog() {
   editingStockId = null;
@@ -120,6 +338,8 @@ function openNewStockDialog() {
   stockForm.reset();
 
   hideStockError();
+
+  stockPreview.textContent = "";
 
   stockDialogTitle.textContent =
     "銘柄を追加";
@@ -130,10 +350,15 @@ function openNewStockDialog() {
   stockDialog.showModal();
 }
 
-function openEditStockDialog(stockId) {
-  const stock = portfolio.find(
-    (item) => item.id === stockId
-  );
+
+function openEditStockDialog(
+  stockId
+) {
+  const stock =
+    portfolio.find(
+      (item) =>
+        item.id === stockId
+    );
 
   if (!stock) {
     return;
@@ -143,10 +368,14 @@ function openEditStockDialog(stockId) {
 
   hideStockError();
 
-  document.getElementById("stockCode").value =
+  stockCodeInput.value =
     stock.code;
 
-  document.getElementById("shareCount").value =
+  document
+    .getElementById(
+      "shareCount"
+    )
+    .value =
     stock.shares;
 
   stockDialogTitle.textContent =
@@ -155,32 +384,13 @@ function openEditStockDialog(stockId) {
   stockSubmitButton.textContent =
     "変更を保存";
 
+  updateStockPreview(
+    stock.code
+  );
+
   stockDialog.showModal();
 }
 
-function openExpenseDialog() {
-  document.getElementById(
-    "housingExpense"
-  ).value = expenses.housing || "";
-
-  document.getElementById(
-    "foodExpense"
-  ).value = expenses.food || "";
-
-  document.getElementById(
-    "utilityExpense"
-  ).value = expenses.utility || "";
-
-  document.getElementById(
-    "communicationExpense"
-  ).value = expenses.communication || "";
-
-  document.getElementById(
-    "otherExpense"
-  ).value = expenses.other || "";
-
-  expenseDialog.showModal();
-}
 
 function resetStockForm() {
   editingStockId = null;
@@ -198,73 +408,155 @@ function resetStockForm() {
     "ポートフォリオに追加";
 }
 
-function showStockError(message) {
-  stockFormError.textContent = message;
-  stockFormError.hidden = false;
+
+function openExpenseDialog() {
+  setInputValue(
+    "housingExpense",
+    expenses.housing
+  );
+
+  setInputValue(
+    "foodExpense",
+    expenses.food
+  );
+
+  setInputValue(
+    "utilityExpense",
+    expenses.utility
+  );
+
+  setInputValue(
+    "communicationExpense",
+    expenses.communication
+  );
+
+  setInputValue(
+    "otherExpense",
+    expenses.other
+  );
+
+  expenseDialog.showModal();
 }
 
-function hideStockError() {
-  stockFormError.textContent = "";
-  stockFormError.hidden = true;
+
+function openDividendDialog() {
+  hideDividendError();
+
+  renderDividendStockOptions();
+
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
+
+  document
+    .getElementById(
+      "receivedDividendDate"
+    )
+    .value = today;
+
+  dividendDialog.showModal();
 }
 
-function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add("show");
 
-  clearTimeout(showToast.timer);
-
-  showToast.timer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2200);
-}
+// ========================================
+// 保存・読込
+// ========================================
 
 function saveData() {
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
       portfolio,
-      expenses
+      expenses,
+      dividendHistory
     })
   );
 }
 
+
 function loadData() {
   try {
-    const savedData =
-      localStorage.getItem(STORAGE_KEY);
+    const currentData =
+      localStorage.getItem(
+        STORAGE_KEY
+      );
 
-    if (!savedData) {
+    if (currentData) {
+      const parsed =
+        JSON.parse(currentData);
+
+      portfolio =
+        Array.isArray(
+          parsed.portfolio
+        )
+          ? parsed.portfolio
+          : [];
+
+      expenses =
+        parsed.expenses || {};
+
+      dividendHistory =
+        Array.isArray(
+          parsed.dividendHistory
+        )
+          ? parsed.dividendHistory
+          : [];
+
       return;
     }
 
-    const parsedData =
-      JSON.parse(savedData);
+    const oldData =
+      localStorage.getItem(
+        OLD_STORAGE_KEY
+      );
+
+    if (!oldData) {
+      return;
+    }
+
+    const parsedOldData =
+      JSON.parse(oldData);
 
     portfolio =
-      Array.isArray(parsedData.portfolio)
-        ? parsedData.portfolio
+      Array.isArray(
+        parsedOldData.portfolio
+      )
+        ? parsedOldData.portfolio
         : [];
 
     expenses =
-      parsedData.expenses || {};
+      parsedOldData.expenses || {};
+
+    dividendHistory = [];
+
+    saveData();
   } catch (error) {
     console.error(
-      "保存データの読み込みに失敗しました。",
+      "保存データの読込に失敗しました。",
       error
     );
 
     portfolio = [];
     expenses = {};
+    dividendHistory = [];
   }
 }
+
+
+// ========================================
+// stocks.json
+// ========================================
 
 async function loadStockDatabase() {
   try {
     const response =
-      await fetch("./stocks.json", {
-        cache: "no-store"
-      });
+      await fetch(
+        "./stocks.json",
+        {
+          cache: "no-store"
+        }
+      );
 
     if (!response.ok) {
       throw new Error(
@@ -274,10 +566,11 @@ async function loadStockDatabase() {
 
     stockDatabase =
       await response.json();
+
     renderStockSuggestions();
   } catch (error) {
     console.error(
-      "銘柄データの読み込みに失敗しました。",
+      "銘柄データの読込に失敗しました。",
       error
     );
 
@@ -288,21 +581,153 @@ async function loadStockDatabase() {
     );
   }
 }
+
+
 function renderStockSuggestions() {
   if (!stockSuggestions) {
     return;
   }
 
   stockSuggestions.innerHTML =
-    Object.entries(stockDatabase)
-      .map(([code, stock]) => `
-        <option
-          value="${escapeHtml(code)}"
-          label="${escapeHtml(stock.name)}"
-        ></option>
-      `)
+    Object
+      .entries(stockDatabase)
+      .map(
+        ([code, stock]) => `
+          <option
+            value="${escapeHtml(code)}"
+            label="${escapeHtml(
+              stock.name
+            )}"
+          ></option>
+        `
+      )
       .join("");
 }
+
+
+// ========================================
+// 銘柄プレビュー
+// ========================================
+
+stockCodeInput.addEventListener(
+  "input",
+  () => {
+    updateStockPreview(
+      stockCodeInput.value
+    );
+  }
+);
+
+
+function updateStockPreview(
+  inputValue
+) {
+  const keyword =
+    String(inputValue || "")
+      .trim()
+      .toUpperCase();
+
+  if (!keyword) {
+    stockPreview.textContent = "";
+    return;
+  }
+
+  const matched =
+    findStock(keyword);
+
+  if (!matched) {
+    stockPreview.textContent =
+      "銘柄が見つかりません。";
+
+    return;
+  }
+
+  const {
+    code,
+    stock
+  } = matched;
+
+  const dividend =
+    Number(
+      stock
+        .annualDividendPerShare ||
+      0
+    );
+
+  const price =
+    Number(
+      stock.currentPrice || 0
+    );
+
+  stockPreview.innerHTML = `
+    <strong>
+      ${escapeHtml(stock.name)}
+    </strong>
+    <br>
+    コード：
+    ${escapeHtml(code)}
+    <br>
+    年間配当：
+    ${formatNumber(dividend)}
+    ${escapeHtml(
+      stock.currency || "JPY"
+    )}
+    ${
+      price > 0
+        ? `<br>参考株価：
+          ${formatNumber(price)}
+          ${escapeHtml(
+            stock.currency || "JPY"
+          )}`
+        : ""
+    }
+  `;
+}
+
+
+function findStock(keyword) {
+  const directStock =
+    stockDatabase[keyword];
+
+  if (directStock) {
+    return {
+      code: keyword,
+      stock: directStock
+    };
+  }
+
+  const matchedEntry =
+    Object
+      .entries(stockDatabase)
+      .find(
+        ([code, stock]) => {
+          const name =
+            String(
+              stock.name || ""
+            )
+              .toUpperCase();
+
+          return (
+            name.includes(keyword) ||
+            code.includes(keyword)
+          );
+        }
+      );
+
+  if (!matchedEntry) {
+    return null;
+  }
+
+  return {
+    code: matchedEntry[0],
+    stock: matchedEntry[1]
+  };
+}
+
+
+// ========================================
+// 銘柄フォーム
+// ========================================
 
 stockForm.addEventListener(
   "submit",
@@ -311,24 +736,25 @@ stockForm.addEventListener(
 
     hideStockError();
 
-    const code =
-      document
-        .getElementById("stockCode")
-        .value
+    const keyword =
+      stockCodeInput.value
         .trim()
         .toUpperCase();
 
     const shares =
       Number(
-        document.getElementById(
-          "shareCount"
-        ).value
+        document
+          .getElementById(
+            "shareCount"
+          )
+          .value
       );
 
-    if (!code) {
+    if (!keyword) {
       showStockError(
-        "銘柄コードを入力してください。"
+        "銘柄コードまたは銘柄名を入力してください。"
       );
+
       return;
     }
 
@@ -339,43 +765,34 @@ stockForm.addEventListener(
       showStockError(
         "保有株数を正しく入力してください。"
       );
+
       return;
     }
 
-    let resolvedCode = code;
+    const matched =
+      findStock(keyword);
 
-let stockInfo =
-  stockDatabase[resolvedCode];
-
-if (!stockInfo) {
-  const matchedEntry =
-    Object.entries(stockDatabase)
-      .find(([, stock]) =>
-        String(stock.name)
-          .toUpperCase()
-          .includes(code)
-      );
-
-  if (matchedEntry) {
-    resolvedCode = matchedEntry[0];
-    stockInfo = matchedEntry[1];
-  }
-}
-
-    if (!stockInfo) {
+    if (!matched) {
       showStockError(
-        "この銘柄コードは登録されていません。"
+        "この銘柄はstocks.jsonに登録されていません。"
       );
+
       return;
     }
+
+    const {
+      code,
+      stock
+    } = matched;
 
     if (
-      stockInfo.dataStatus ===
+      stock.dataStatus ===
       "manual-required"
     ) {
       showStockError(
         "この銘柄は配当データ未登録です。"
       );
+
       return;
     }
 
@@ -384,58 +801,97 @@ if (!stockInfo) {
         editingStockId ||
         createId(),
 
-      code: resolvedCode,
-      name: stockInfo.name,
+      code,
+
+      name:
+        stock.name ||
+        code,
+
       shares,
 
       dividend:
         Number(
-          stockInfo
-            .annualDividendPerShare
+          stock
+            .annualDividendPerShare ||
+          0
+        ),
+
+      price:
+        Number(
+          stock.currentPrice ||
+          0
         ),
 
       type:
-        stockInfo.sector ||
+        stock.sector ||
         "other",
 
       market:
-        stockInfo.market ||
+        stock.market ||
         "JP",
 
-    currency:
-  stockInfo.currency ||
-  "JPY",
-
-price:
-  Number(
-    stockInfo.currentPrice || 0
-  )
-};
+      currency:
+        stock.currency ||
+        "JPY"
+    };
 
     if (editingStockId) {
       portfolio =
-        portfolio.map((stock) =>
-          stock.id === editingStockId
-            ? stockData
-            : stock
+        portfolio.map(
+          (item) =>
+            item.id ===
+            editingStockId
+              ? stockData
+              : item
         );
 
       showToast(
         `${stockData.name}を更新しました。`
       );
     } else {
-      portfolio.push(stockData);
+      const existingStock =
+        portfolio.find(
+          (item) =>
+            item.code === code
+        );
 
-      showToast(
-        `${stockData.name}を追加しました。`
-      );
+      if (existingStock) {
+        existingStock.shares +=
+          shares;
+
+        existingStock.dividend =
+          stockData.dividend;
+
+        existingStock.price =
+          stockData.price;
+
+        showToast(
+          `${stockData.name}の株数を追加しました。`
+        );
+      } else {
+        portfolio.push(
+          stockData
+        );
+
+        showToast(
+          `${stockData.name}を追加しました。`
+        );
+      }
     }
 
     saveData();
+
     stockDialog.close();
+
     render();
   }
-); 
+);
+
+
+// ========================================
+// 生活費フォーム
+// ========================================
+
 expenseForm.addEventListener(
   "submit",
   (event) => {
@@ -480,55 +936,155 @@ expenseForm.addEventListener(
   }
 );
 
-function getNonNegativeNumber(
-  elementId
-) {
-  const value =
-    Number(
-      document.getElementById(
-        elementId
-      ).value
+
+// ========================================
+// 配当記録フォーム
+// ========================================
+
+dividendForm.addEventListener(
+  "submit",
+  (event) => {
+    event.preventDefault();
+
+    hideDividendError();
+
+    const stockCode =
+      dividendStockCode.value;
+
+    const amount =
+      Number(
+        document
+          .getElementById(
+            "receivedDividendAmount"
+          )
+          .value
+      );
+
+    const date =
+      document
+        .getElementById(
+          "receivedDividendDate"
+        )
+        .value;
+
+    const memo =
+      document
+        .getElementById(
+          "receivedDividendMemo"
+        )
+        .value
+        .trim();
+
+    if (!stockCode) {
+      showDividendError(
+        "銘柄を選択してください。"
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      showDividendError(
+        "受取金額を正しく入力してください。"
+      );
+
+      return;
+    }
+
+    if (!date) {
+      showDividendError(
+        "受取日を入力してください。"
+      );
+
+      return;
+    }
+
+    const stock =
+      portfolio.find(
+        (item) =>
+          item.code === stockCode
+      );
+
+    if (!stock) {
+      showDividendError(
+        "対象の銘柄が見つかりません。"
+      );
+
+      return;
+    }
+
+    const oldLevel =
+      getMonsterStatus().level;
+
+    dividendHistory.push({
+      id: createId(),
+
+      stockCode:
+        stock.code,
+
+      stockName:
+        stock.name,
+
+      amount,
+
+      date,
+
+      memo,
+
+      createdAt:
+        new Date()
+          .toISOString()
+    });
+
+    saveData();
+
+    dividendDialog.close();
+
+    dividendForm.reset();
+
+    render();
+
+    const newStatus =
+      getMonsterStatus();
+
+    const gainedExp =
+      calculateExpFromDividend(
+        amount
+      );
+
+    showToast(
+      `${stock.name}の配当を記録しました。＋${gainedExp} EXP`
     );
 
-  if (
-    !Number.isFinite(value) ||
-    value < 0
-  ) {
-    return 0;
+    if (
+      newStatus.level >
+      oldLevel
+    ) {
+      showLevelUpDialog(
+        newStatus
+      );
+    }
   }
+);
 
-  return value;
-}
 
-function createId() {
-  if (
-    window.crypto &&
-    typeof window.crypto
-      .randomUUID === "function"
-  ) {
-    return window.crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random()}`;
-}
+// ========================================
+// 計算
+// ========================================
 
 function calculateStockDividend(
   stock
 ) {
   return (
-    Number(stock.shares) *
-    Number(stock.dividend)
+    Number(stock.shares || 0) *
+    Number(stock.dividend || 0)
   );
 }
-function calculatePortfolioValue() {
-  return portfolio.reduce(
-    (total, stock) =>
-      total +
-      Number(stock.shares) *
-      Number(stock.price || 0),
-    0
-  );
-}
+
+
 function calculateAnnualDividend() {
   return portfolio.reduce(
     (total, stock) =>
@@ -541,56 +1097,256 @@ function calculateAnnualDividend() {
 }
 
 
-function calculateMonthlyExpense() {
-  return Object.values(
-    expenses
-  ).reduce(
-    (total, value) =>
+function calculatePortfolioValue() {
+  return portfolio.reduce(
+    (total, stock) =>
       total +
-      Number(value || 0),
+      Number(stock.shares || 0) *
+      Number(stock.price || 0),
     0
   );
 }
 
-function formatYen(value) {
-  return Math.round(
-    Number(value) || 0
-  ).toLocaleString("ja-JP");
+
+function calculateMonthlyExpense() {
+  return Object
+    .values(expenses)
+    .reduce(
+      (total, value) =>
+        total +
+        Number(value || 0),
+      0
+    );
 }
 
-function formatShares(value) {
-  return Number(
-    value || 0
-  ).toLocaleString(
-    "ja-JP",
-    {
-      maximumFractionDigits: 4
-    }
+
+function calculateReceivedDividendTotal() {
+  return dividendHistory.reduce(
+    (total, record) =>
+      total +
+      Number(record.amount || 0),
+    0
   );
 }
 
-function formatPercent(value) {
-  if (
-    !Number.isFinite(value) ||
-    value <= 0
-  ) {
-    return "0";
-  }
 
-  if (value >= 100) {
-    return "100";
-  }
-
-  return value.toFixed(1);
+function calculateExpFromDividend(
+  amount
+) {
+  return Math.max(
+    1,
+    Math.floor(
+      Number(amount || 0) /
+      100
+    )
+  );
 }
+
+
+function calculateTotalExp() {
+  return dividendHistory.reduce(
+    (total, record) =>
+      total +
+      calculateExpFromDividend(
+        record.amount
+      ),
+    0
+  );
+}
+
+
+// ========================================
+// モンスター
+// ========================================
+
+function getMonsterStatus() {
+  const totalExp =
+    calculateTotalExp();
+
+  const expPerLevel =
+    100;
+
+  const level =
+    Math.floor(
+      totalExp / expPerLevel
+    ) + 1;
+
+  const currentExp =
+    totalExp % expPerLevel;
+
+  let name =
+    "タマゴン";
+
+  let image =
+    "🥚";
+
+  let message =
+    "配当を記録してモンスターを育てよう。";
+
+  if (level >= 20) {
+    name =
+      "ドラゴン";
+
+    image =
+      "🐲";
+
+    message =
+      "ついにドラゴンへ進化しました！";
+  } else if (level >= 10) {
+    name =
+      "ヒナモン";
+
+    image =
+      "🐣";
+
+    message =
+      "次はLv.20でドラゴンへ進化します。";
+  } else {
+    message =
+      `Lv.10まであと${10 - level}レベルです。`;
+  }
+
+  return {
+    totalExp,
+    level,
+    currentExp,
+    nextExp:
+      expPerLevel,
+    name,
+    image,
+    message
+  };
+}
+
+
+function updateMonster() {
+  const status =
+    getMonsterStatus();
+
+  monsterName.textContent =
+    status.name;
+
+  monsterLevel.textContent =
+    status.level;
+
+  monsterExp.textContent =
+    status.currentExp;
+
+  monsterNextExp.textContent =
+    status.nextExp;
+
+  monsterExpBar.style.width =
+    `${status.currentExp}%`;
+
+  monsterMessage.textContent =
+    status.message;
+
+  monsterImage.textContent =
+    status.image;
+
+  receivedDividendTotal.textContent =
+    formatYen(
+      calculateReceivedDividendTotal()
+    );
+
+  updateMonsterBook(
+    status.level
+  );
+
+  previousMonsterLevel =
+    status.level;
+}
+
+
+function updateMonsterBook(level) {
+  unlockMonsterCard(
+    monsterStageEgg,
+    true
+  );
+
+  unlockMonsterCard(
+    monsterStageChick,
+    level >= 10
+  );
+
+  unlockMonsterCard(
+    monsterStageDragon,
+    level >= 20
+  );
+
+  const unlockedCount =
+    level >= 20
+      ? 3
+      : level >= 10
+        ? 2
+        : 1;
+
+  monsterBookCount.textContent =
+    `${unlockedCount} / 3`;
+}
+
+
+function unlockMonsterCard(
+  element,
+  unlocked
+) {
+  if (!element) {
+    return;
+  }
+
+  element.classList.toggle(
+    "unlocked",
+    unlocked
+  );
+
+  element.classList.toggle(
+    "locked",
+    !unlocked
+  );
+}
+
+
+function showLevelUpDialog(
+  status
+) {
+  document
+    .getElementById(
+      "levelUpMonsterImage"
+    )
+    .textContent =
+    status.image;
+
+  document
+    .getElementById(
+      "levelUpTitle"
+    )
+    .textContent =
+    `Lv.${status.level}になりました`;
+
+  document
+    .getElementById(
+      "levelUpMessage"
+    )
+    .textContent =
+    status.message;
+
+  levelUpDialog.showModal();
+}
+
+
+// ========================================
+// ダッシュボード
+// ========================================
 
 function updateDashboard() {
   const annualDividend =
     calculateAnnualDividend();
-const totalValue =
-  calculatePortfolioValue();
+
   const monthlyDividendValue =
     annualDividend / 12;
+
+  const totalValue =
+    calculatePortfolioValue();
 
   const monthlyExpense =
     calculateMonthlyExpense();
@@ -615,8 +1371,12 @@ const totalValue =
     formatYen(
       monthlyDividendValue
     );
-portfolioValue.textContent =
-  formatYen(totalValue);
+
+  portfolioValue.textContent =
+    formatYen(
+      totalValue
+    );
+
   freedomRate.textContent =
     formatPercent(
       coverageRate
@@ -627,6 +1387,12 @@ portfolioValue.textContent =
       coverageRate,
       100
     )}%`;
+
+  stockCount.textContent =
+    `${portfolio.length}銘柄`;
+
+  summaryStockCount.textContent =
+    `${portfolio.length}銘柄`;
 
   if (annualExpense <= 0) {
     freedomMessage.textContent =
@@ -693,34 +1459,40 @@ portfolioValue.textContent =
     )}`;
 }
 
+
+// ========================================
+// ポートフォリオ
+// ========================================
+
 function sortPortfolio(
   stockItems
 ) {
-  const copiedStocks =
+  const copied =
     [...stockItems];
 
   switch (
     stockSort.value
   ) {
     case "shares-desc":
-      return copiedStocks.sort(
+      return copied.sort(
         (a, b) =>
           Number(b.shares) -
           Number(a.shares)
       );
 
     case "name-asc":
-      return copiedStocks.sort(
+      return copied.sort(
         (a, b) =>
-          a.name.localeCompare(
-            b.name,
-            "ja"
-          )
+          String(a.name)
+            .localeCompare(
+              String(b.name),
+              "ja"
+            )
       );
 
     case "dividend-desc":
     default:
-      return copiedStocks.sort(
+      return copied.sort(
         (a, b) =>
           calculateStockDividend(
             b
@@ -731,13 +1503,21 @@ function sortPortfolio(
       );
   }
 }
+
+
 function renderPortfolio() {
   stockCount.textContent =
     `${portfolio.length}銘柄`;
 
-  if (portfolio.length === 0) {
+  summaryStockCount.textContent =
+    `${portfolio.length}銘柄`;
+
+  if (
+    portfolio.length === 0
+  ) {
     stockList.innerHTML = `
       <div class="empty-state">
+
         <div class="empty-icon">
           DM
         </div>
@@ -749,37 +1529,60 @@ function renderPortfolio() {
         <p>
           「銘柄追加」から最初のポートフォリオを登録してください。
         </p>
+
       </div>
     `;
+
+    renderDividendStockOptions();
 
     return;
   }
 
-  const sortedPortfolio =
-    sortPortfolio(portfolio);
+  const totalDividend =
+    calculateAnnualDividend();
+
+  const sorted =
+    sortPortfolio(
+      portfolio
+    );
 
   stockList.innerHTML =
-    sortedPortfolio
+    sorted
       .map((stock) => {
         const annualDividend =
-          calculateStockDividend(stock);
-        const totalDividend =
-  calculateAnnualDividend();
+          calculateStockDividend(
+            stock
+          );
 
-const ratio =
-  totalDividend > 0
-    ? (annualDividend / totalDividend) * 100
-    : 0;
-const stockValue =
-  Number(stock.shares || 0) *
-  Number(stock.price || 0);
+        const stockValue =
+          Number(
+            stock.shares || 0
+          ) *
+          Number(
+            stock.price || 0
+          );
 
-const dividendYield =
-  stockValue > 0
-    ? (annualDividend / stockValue) * 100
-    : 0;
-        const symbolText =
-          String(stock.name || stock.code)
+        const dividendYield =
+          stockValue > 0
+            ? (
+                annualDividend /
+                stockValue
+              ) * 100
+            : 0;
+
+        const ratio =
+          totalDividend > 0
+            ? (
+                annualDividend /
+                totalDividend
+              ) * 100
+            : 0;
+
+        const symbol =
+          String(
+            stock.name ||
+            stock.code
+          )
             .slice(0, 2)
             .toUpperCase();
 
@@ -790,28 +1593,39 @@ const dividendYield =
               class="asset-symbol"
               aria-hidden="true"
             >
-              ${escapeHtml(symbolText)}
+              ${escapeHtml(symbol)}
             </div>
 
             <div class="stock-info">
 
               <h3>
-                ${escapeHtml(stock.name)}
+                ${escapeHtml(
+                  stock.name
+                )}
               </h3>
 
               <div class="stock-meta">
 
                 <span>
-                  ${escapeHtml(stock.code || "登録済み")}
+                  ${escapeHtml(
+                    stock.code
+                  )}
                 </span>
 
                 <span>
-                  ${formatShares(stock.shares)}株
+                  ${formatShares(
+                    stock.shares
+                  )}株
                 </span>
 
                 <span>
                   1株配当
-                  ¥${formatYen(stock.dividend)}
+                  ${formatNumber(
+                    stock.dividend
+                  )}
+                  ${escapeHtml(
+                    stock.currency
+                  )}
                 </span>
 
               </div>
@@ -825,50 +1639,69 @@ const dividendYield =
               </small>
 
               <strong>
-                ¥${formatYen(annualDividend)}
+                ¥${formatYen(
+                  annualDividend
+                )}
               </strong>
 
             </div>
+
             <div class="stock-value">
 
-  <small>
-    資産評価額
-  </small>
+              <div>
 
-  <strong>
-    ¥${formatYen(stockValue)}
-  </strong>
+                <small>
+                  資産評価額
+                </small>
 
-  <small>
-    配当利回り ${formatPercent(dividendYield)}%
-  </small>
+                <strong>
+                  ¥${formatYen(
+                    stockValue
+                  )}
+                </strong>
 
-</div>
+              </div>
+
+              <small>
+                配当利回り
+                ${formatPercent(
+                  dividendYield
+                )}%
+              </small>
+
+            </div>
+
             <div class="stock-ratio">
 
-  <div class="ratio-track">
+              <div class="ratio-track">
 
-    <div
-  class="ratio-bar"
-  style="width:${Math.min(ratio, 100)}%">
-</div>
+                <div
+                  class="ratio-bar"
+                  style="width:${Math.min(
+                    ratio,
+                    100
+                  )}%"
+                ></div>
 
-  </div>
+              </div>
 
-  <small>
-    ポートフォリオ比率
-    ${formatPercent(ratio)}%
-  </small>
+              <small>
+                ポートフォリオ比率
+                ${formatPercent(
+                  ratio
+                )}%
+              </small>
 
-</div>
+            </div>
 
             <div class="stock-actions">
 
               <button
                 class="edit-stock-button"
                 type="button"
-                data-edit-stock="${escapeHtml(stock.id)}"
-                aria-label="${escapeHtml(stock.name)}を編集"
+                data-edit-stock="${escapeHtml(
+                  stock.id
+                )}"
               >
                 編集
               </button>
@@ -876,8 +1709,9 @@ const dividendYield =
               <button
                 class="delete-stock-button"
                 type="button"
-                data-delete-stock="${escapeHtml(stock.id)}"
-                aria-label="${escapeHtml(stock.name)}を削除"
+                data-delete-stock="${escapeHtml(
+                  stock.id
+                )}"
               >
                 削除
               </button>
@@ -889,6 +1723,13 @@ const dividendYield =
       })
       .join("");
 
+  bindPortfolioButtons();
+
+  renderDividendStockOptions();
+}
+
+
+function bindPortfolioButtons() {
   document
     .querySelectorAll(
       "[data-edit-stock]"
@@ -920,20 +1761,21 @@ const dividendYield =
     });
 }
 
+
 function deleteStock(stockId) {
-  const targetStock =
+  const stock =
     portfolio.find(
-      (stock) =>
-        stock.id === stockId
+      (item) =>
+        item.id === stockId
     );
 
-  if (!targetStock) {
+  if (!stock) {
     return;
   }
 
   const confirmed =
     window.confirm(
-      `${targetStock.name}を削除しますか？`
+      `${stock.name}を削除しますか？`
     );
 
   if (!confirmed) {
@@ -942,23 +1784,31 @@ function deleteStock(stockId) {
 
   portfolio =
     portfolio.filter(
-      (stock) =>
-        stock.id !== stockId
+      (item) =>
+        item.id !== stockId
     );
 
   saveData();
+
   render();
 
   showToast(
-    `${targetStock.name}を削除しました。`
+    `${stock.name}を削除しました。`
   );
 }
+
+
+// ========================================
+// 生活費
+// ========================================
 
 function renderExpenses() {
   const monthlyExpense =
     calculateMonthlyExpense();
 
-  if (monthlyExpense <= 0) {
+  if (
+    monthlyExpense <= 0
+  ) {
     expenseList.innerHTML = `
       <div class="empty-state compact">
 
@@ -978,19 +1828,14 @@ function renderExpenses() {
   }
 
   const monthlyDividendValue =
-    calculateAnnualDividend() / 12;
+    calculateAnnualDividend() /
+    12;
 
   const coverageRate =
     (
       monthlyDividendValue /
       monthlyExpense
     ) * 100;
-
-  const displayedRate =
-    Math.min(
-      coverageRate,
-      100
-    );
 
   expenseList.innerHTML = `
     <article class="expense-card">
@@ -1008,7 +1853,9 @@ function renderExpenses() {
               : ""
           }"
         >
-          ${formatPercent(coverageRate)}%
+          ${formatPercent(
+            coverageRate
+          )}%
         </strong>
 
       </div>
@@ -1016,12 +1863,16 @@ function renderExpenses() {
       <div class="expense-values">
 
         月平均配当
-        ¥${formatYen(monthlyDividendValue)}
+        ¥${formatYen(
+          monthlyDividendValue
+        )}
 
         ／
 
         毎月の生活費
-        ¥${formatYen(monthlyExpense)}
+        ¥${formatYen(
+          monthlyExpense
+        )}
 
       </div>
 
@@ -1029,7 +1880,10 @@ function renderExpenses() {
 
         <div
           class="expense-progress"
-          style="width:${displayedRate}%"
+          style="width:${Math.min(
+            coverageRate,
+            100
+          )}%"
         ></div>
 
       </div>
@@ -1038,16 +1892,329 @@ function renderExpenses() {
   `;
 }
 
+
+// ========================================
+// 配当履歴
+// ========================================
+
+function renderDividendStockOptions() {
+  const currentValue =
+    dividendStockCode.value;
+
+  dividendStockCode.innerHTML = `
+    <option value="">
+      銘柄を選択
+    </option>
+
+    ${portfolio
+      .map(
+        (stock) => `
+          <option
+            value="${escapeHtml(
+              stock.code
+            )}"
+          >
+            ${escapeHtml(
+              stock.name
+            )}
+            （${escapeHtml(
+              stock.code
+            )}）
+          </option>
+        `
+      )
+      .join("")}
+  `;
+
+  if (
+    portfolio.some(
+      (stock) =>
+        stock.code ===
+        currentValue
+    )
+  ) {
+    dividendStockCode.value =
+      currentValue;
+  }
+}
+
+
+function renderDividendHistory() {
+  if (
+    dividendHistory.length === 0
+  ) {
+    dividendHistoryList.innerHTML = `
+      <div class="empty-state compact">
+
+        <h3>
+          配当履歴はまだありません
+        </h3>
+
+        <p>
+          配当を受け取ったら記録して、
+          モンスターにEXPを与えましょう。
+        </p>
+
+      </div>
+    `;
+
+    return;
+  }
+
+  const sortedHistory =
+    [...dividendHistory]
+      .sort(
+        (a, b) =>
+          new Date(b.date) -
+          new Date(a.date)
+      );
+
+  dividendHistoryList.innerHTML =
+    sortedHistory
+      .map(
+        (record) => `
+          <article class="history-card">
+
+            <div class="history-main">
+
+              <h3>
+                ${escapeHtml(
+                  record.stockName
+                )}
+              </h3>
+
+              <p class="history-meta">
+
+                ${formatDate(
+                  record.date
+                )}
+
+                ${
+                  record.memo
+                    ? `・${escapeHtml(
+                        record.memo
+                      )}`
+                    : ""
+                }
+
+              </p>
+
+            </div>
+
+            <strong class="history-amount">
+              ¥${formatYen(
+                record.amount
+              )}
+            </strong>
+
+            <button
+              class="history-delete-button"
+              type="button"
+              data-delete-history="${escapeHtml(
+                record.id
+              )}"
+            >
+              削除
+            </button>
+
+          </article>
+        `
+      )
+      .join("");
+
+  document
+    .querySelectorAll(
+      "[data-delete-history]"
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        () => {
+          deleteDividendHistory(
+            button.dataset
+              .deleteHistory
+          );
+        }
+      );
+    });
+}
+
+
+function deleteDividendHistory(
+  historyId
+) {
+  const record =
+    dividendHistory.find(
+      (item) =>
+        item.id === historyId
+    );
+
+  if (!record) {
+    return;
+  }
+
+  const confirmed =
+    window.confirm(
+      `${record.stockName}の配当記録を削除しますか？`
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  dividendHistory =
+    dividendHistory.filter(
+      (item) =>
+        item.id !== historyId
+    );
+
+  saveData();
+
+  render();
+
+  showToast(
+    "配当記録を削除しました。"
+  );
+}
+
+
+// ========================================
+// 配当カレンダー
+// ========================================
+
+function renderDividendCalendar() {
+  const currentYear =
+    new Date().getFullYear();
+
+  calendarYear.textContent =
+    `${currentYear}年`;
+
+  const monthlyTotals =
+    Array(12).fill(0);
+
+  dividendHistory
+    .filter((record) => {
+      const date =
+        new Date(record.date);
+
+      return (
+        date.getFullYear() ===
+        currentYear
+      );
+    })
+    .forEach((record) => {
+      const month =
+        new Date(record.date)
+          .getMonth();
+
+      monthlyTotals[month] +=
+        Number(
+          record.amount || 0
+        );
+    });
+
+  dividendCalendar.innerHTML =
+    monthlyTotals
+      .map(
+        (amount, index) => `
+          <article class="month-item">
+
+            <span>
+              ${index + 1}月
+            </span>
+
+            <strong>
+              ¥${formatYen(
+                amount
+              )}
+            </strong>
+
+          </article>
+        `
+      )
+      .join("");
+}
+
+
+// ========================================
+// ナビゲーション
+// ========================================
+
+document
+  .querySelectorAll(
+    "[data-scroll-target]"
+  )
+  .forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        document
+          .querySelectorAll(
+            ".nav-button"
+          )
+          .forEach(
+            (navButton) => {
+              navButton
+                .classList
+                .remove(
+                  "active"
+                );
+            }
+          );
+
+        button
+          .classList
+          .add("active");
+
+        const targetId =
+          button.dataset
+            .scrollTarget;
+
+        if (
+          targetId === "top"
+        ) {
+          window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+          });
+
+          return;
+        }
+
+        const target =
+          document.getElementById(
+            targetId
+          );
+
+        if (target) {
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+        }
+      }
+    );
+  });
+
+
+// ========================================
+// データ移行
+// ========================================
+
 function migratePortfolioData() {
   portfolio =
     portfolio.map((stock) => {
-      const matchedEntry =
-        Object.values(
-          stockDatabase
-        ).find(
-          (entry) =>
-            entry.name === stock.name
+      const matched =
+        findStock(
+          String(
+            stock.code ||
+            stock.name ||
+            ""
+          ).toUpperCase()
         );
+
+      const stockInfo =
+        matched?.stock || {};
 
       return {
         id:
@@ -1056,12 +2223,12 @@ function migratePortfolioData() {
 
         code:
           stock.code ||
-          matchedEntry?.ticker ||
+          matched?.code ||
           "",
 
         name:
           stock.name ||
-          matchedEntry?.name ||
+          stockInfo.name ||
           "名称未登録",
 
         shares:
@@ -1073,53 +2240,57 @@ function migratePortfolioData() {
           Number(
             stock.dividend ??
             stock.dividendPerShare ??
-            matchedEntry
-              ?.annualDividendPerShare ??
+            stockInfo
+              .annualDividendPerShare ??
+            0
+          ),
+
+        price:
+          Number(
+            stock.price ??
+            stockInfo.currentPrice ??
             0
           ),
 
         type:
           stock.type ||
-          matchedEntry?.sector ||
+          stockInfo.sector ||
           "other",
 
         market:
           stock.market ||
-          matchedEntry?.market ||
+          stockInfo.market ||
           "JP",
 
         currency:
-  stock.currency ||
-  matchedEntry?.currency ||
-  "JPY",
-
-price:
-  Number(
-    stock.price ??
-    matchedEntry?.currentPrice ??
-    0
-  )
+          stock.currency ||
+          stockInfo.currency ||
+          "JPY"
       };
     });
 
   saveData();
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+
+// ========================================
+// 共通
+// ========================================
 
 function render() {
   updateDashboard();
+
   updateMonster();
+
   renderPortfolio();
+
   renderExpenses();
+
+  renderDividendHistory();
+
+  renderDividendCalendar();
 }
+
 
 async function initializeApp() {
   loadData();
@@ -1128,8 +2299,245 @@ async function initializeApp() {
 
   migratePortfolioData();
 
+  previousMonsterLevel =
+    getMonsterStatus().level;
+
   render();
 }
 
-initializeApp();
 
+function showStockError(
+  message
+) {
+  stockFormError.textContent =
+    message;
+
+  stockFormError.hidden =
+    false;
+}
+
+
+function hideStockError() {
+  stockFormError.textContent =
+    "";
+
+  stockFormError.hidden =
+    true;
+}
+
+
+function showDividendError(
+  message
+) {
+  dividendFormError.textContent =
+    message;
+
+  dividendFormError.hidden =
+    false;
+}
+
+
+function hideDividendError() {
+  dividendFormError.textContent =
+    "";
+
+  dividendFormError.hidden =
+    true;
+}
+
+
+function showToast(message) {
+  toast.textContent =
+    message;
+
+  toast.classList.add(
+    "show"
+  );
+
+  clearTimeout(
+    showToast.timer
+  );
+
+  showToast.timer =
+    setTimeout(() => {
+      toast.classList.remove(
+        "show"
+      );
+    }, 2500);
+}
+
+
+function setInputValue(
+  elementId,
+  value
+) {
+  const element =
+    document.getElementById(
+      elementId
+    );
+
+  if (!element) {
+    return;
+  }
+
+  element.value =
+    Number(value || 0) > 0
+      ? value
+      : "";
+}
+
+
+function getNonNegativeNumber(
+  elementId
+) {
+  const value =
+    Number(
+      document
+        .getElementById(
+          elementId
+        )
+        .value
+    );
+
+  if (
+    !Number.isFinite(value) ||
+    value < 0
+  ) {
+    return 0;
+  }
+
+  return value;
+}
+
+
+function createId() {
+  if (
+    window.crypto &&
+    typeof window.crypto
+      .randomUUID === "function"
+  ) {
+    return window
+      .crypto
+      .randomUUID();
+  }
+
+  return (
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(16)
+      .slice(2)
+  );
+}
+
+
+function formatYen(value) {
+  return Math.round(
+    Number(value) || 0
+  ).toLocaleString(
+    "ja-JP"
+  );
+}
+
+
+function formatNumber(value) {
+  return Number(
+    value || 0
+  ).toLocaleString(
+    "ja-JP",
+    {
+      maximumFractionDigits: 4
+    }
+  );
+}
+
+
+function formatShares(value) {
+  return Number(
+    value || 0
+  ).toLocaleString(
+    "ja-JP",
+    {
+      maximumFractionDigits: 4
+    }
+  );
+}
+
+
+function formatPercent(value) {
+  const number =
+    Number(value);
+
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
+    return "0";
+  }
+
+  if (number >= 100) {
+    return "100";
+  }
+
+  return number.toFixed(1);
+}
+
+
+function formatDate(
+  dateString
+) {
+  const date =
+    new Date(dateString);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return dateString;
+  }
+
+  return date
+    .toLocaleDateString(
+      "ja-JP",
+      {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      }
+    );
+}
+
+
+function escapeHtml(value) {
+  return String(
+    value ?? ""
+  )
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+}
+
+
+// ========================================
+// 起動
+// ========================================
+
+initializeApp();
