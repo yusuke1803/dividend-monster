@@ -753,7 +753,14 @@ const ratio =
   totalDividend > 0
     ? (annualDividend / totalDividend) * 100
     : 0;
+const stockValue =
+  Number(stock.shares || 0) *
+  Number(stock.price || 0);
 
+const dividendYield =
+  stockValue > 0
+    ? (annualDividend / stockValue) * 100
+    : 0;
         const symbolText =
           String(stock.name || stock.code)
             .slice(0, 2)
@@ -805,6 +812,21 @@ const ratio =
               </strong>
 
             </div>
+            <div class="stock-value">
+
+  <small>
+    資産評価額
+  </small>
+
+  <strong>
+    ¥${formatYen(stockValue)}
+  </strong>
+
+  <small>
+    配当利回り ${formatPercent(dividendYield)}%
+  </small>
+
+</div>
             <div class="stock-ratio">
 
   <div class="ratio-track">
