@@ -14,13 +14,7 @@ const stockSort = document.getElementById("stockSort");
 
 const totalAnnualDividend =
   document.getElementById("totalAnnualDividend");
-const totalDividend =
-  calculateAnnualDividend();
 
-const ratio =
-  totalDividend > 0
-    ? annualDividend / totalDividend * 100
-    : 0;
 
 const monthlyDividend =
   document.getElementById("monthlyDividend");
