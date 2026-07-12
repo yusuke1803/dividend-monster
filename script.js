@@ -80,19 +80,7 @@ const monsterImage=document.querySelector(".monster-image");
 
 // ---------- Initialize ----------
 
-window.addEventListener("load",async()=>{
 
-    loadData();
-
-    await loadStockDatabase();
-
-    migratePortfolio();
-
-    generateUpcomingDividends();
-
-    render();
-
-});
 
 // ========================================
 // Load stocks.json
@@ -1711,25 +1699,6 @@ function getLocalDateString(date){
 // 起動時処理
 // ========================================
 
-async function startup(){
-
-    await checkExchangeRate();
-
-    generateUpcomingDividends();
-
-    render();
-
-    showHarvestNotification();
-
-}
-
-window.addEventListener(
-
-    "load",
-
-    startup
-
-);
 // ========================================
 // Dividend Monsters Ver4.0
 // Part 8 / 8
@@ -1816,11 +1785,15 @@ async function initializeApp() {
 
     initializeMonster();
 
-    await dailyBoot();
+    await checkExchangeRate();
+
+    generateUpcomingDividends();
 
     render();
 
-    console.log("Dividend Monsters Ver4.0 Started");
+    showHarvestNotification();
+
+    console.log("Dividend Monsters Ver4.1 Started");
 
 }
 
