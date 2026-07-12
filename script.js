@@ -338,21 +338,7 @@ function renderDashboard() {
 // Render
 // ========================================
 
-function render(){
 
-    renderDashboard();
-
-    renderPortfolio();
-
-    renderHarvest();
-
-    renderCalendar();
-
-    renderHistory();
-
-    renderMonster();
-
-}
 // ========================================
 // Dividend Monsters Ver4.0
 // Part 3 / 8
