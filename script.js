@@ -810,9 +810,9 @@ const ratio =
   <div class="ratio-track">
 
     <div
-      class="ratio-bar"
-      style="width:${Math.min(ratio, 100)}%"
-    </div>
+  class="ratio-bar"
+  style="width:${Math.min(ratio, 100)}%">
+</div>
 
   </div>
 
@@ -1050,19 +1050,15 @@ function migratePortfolioData() {
           "JP",
 
         currency:
-          stock.currency ||
-          matchedEntry?.currency ||
-          "JPY"
-        price:
+  stock.currency ||
+  matchedEntry?.currency ||
+  "JPY",
 
+price:
   Number(
-
     stock.price ??
-
     matchedEntry?.currentPrice ??
-
     0
-
   )
       };
     });
