@@ -3,64 +3,133 @@
     "ticker": "9433",
     "name": "KDDI",
     "market": "JP",
-    "sector": "communication",
-    "annualDividendPerShare": 80,
-   "currentPrice": 2500,
+    "sector": "通信",
     "currency": "JPY",
+    "currentPrice": 2500,
+    "annualDividendPerShare": 80,
+    "paymentMonths": [6, 12],
+    "paymentTiming": ["late", "late"],
+    "distributionType": "semiannual",
+    "icon": "kddi.png",
     "dataStatus": "sample"
   },
+
   "9432": {
     "ticker": "9432",
     "name": "NTT",
     "market": "JP",
-    "sector": "communication",
-    "annualDividendPerShare": 5.3,
+    "sector": "通信",
     "currency": "JPY",
+    "currentPrice": 155,
+    "annualDividendPerShare": 5.3,
+    "paymentMonths": [6, 12],
+    "paymentTiming": ["late", "late"],
+    "distributionType": "semiannual",
+    "icon": "ntt.png",
     "dataStatus": "sample"
   },
+
   "8593": {
     "ticker": "8593",
     "name": "三菱HCキャピタル",
     "market": "JP",
-    "sector": "finance",
-    "annualDividendPerShare": 40,
+    "sector": "金融",
     "currency": "JPY",
+    "currentPrice": 1100,
+    "annualDividendPerShare": 40,
+    "paymentMonths": [6, 12],
+    "paymentTiming": ["late", "late"],
+    "distributionType": "semiannual",
+    "icon": "mhc.png",
     "dataStatus": "sample"
   },
+
   "1605": {
     "ticker": "1605",
     "name": "INPEX",
     "market": "JP",
-    "sector": "energy",
-    "annualDividendPerShare": 90,
+    "sector": "エネルギー",
     "currency": "JPY",
+    "currentPrice": 2050,
+    "annualDividendPerShare": 90,
+    "paymentMonths": [3, 9],
+    "paymentTiming": ["late", "late"],
+    "distributionType": "semiannual",
+    "icon": "inpex.png",
     "dataStatus": "sample"
   },
+
   "2865": {
     "ticker": "2865",
-    "name": "グローバルX NASDAQ100・カバード・コール ETF",
+    "name": "GX NASDAQ100 カバードコール ETF",
     "market": "JP",
-    "sector": "etf",
-    "annualDividendPerShare": 0,
+    "sector": "ETF",
     "currency": "JPY",
+    "currentPrice": 1100,
+    "annualDividendPerShare": 120,
+    "paymentMonths": [1,2,3,4,5,6,7,8,9,10,11,12],
+    "paymentTiming": [
+      "mid","mid","mid","mid","mid","mid",
+      "mid","mid","mid","mid","mid","mid"
+    ],
+    "distributionType": "monthly",
+    "icon": "2865.png",
     "dataStatus": "manual-required"
   },
+
   "SPYD": {
     "ticker": "SPYD",
     "name": "SPDR Portfolio S&P 500 High Dividend ETF",
     "market": "US",
-    "sector": "etf",
-    "annualDividendPerShare": 0,
+    "sector": "ETF",
     "currency": "USD",
+    "currentPrice": 44,
+    "annualDividendPerShare": 2.0,
+    "paymentMonths": [3,6,9,12],
+    "paymentTiming": [
+      "late",
+      "late",
+      "late",
+      "late"
+    ],
+    "distributionType": "quarterly",
+    "icon": "spyd.png",
     "dataStatus": "manual-required"
   },
+
   "FEPI": {
     "ticker": "FEPI",
     "name": "REX FANG & Innovation Equity Premium Income ETF",
     "market": "US",
-    "sector": "etf",
-    "annualDividendPerShare": 0,
+    "sector": "ETF",
     "currency": "USD",
+    "currentPrice": 52,
+    "annualDividendPerShare": 6.5,
+    "paymentMonths": [1,2,3,4,5,6,7,8,9,10,11,12],
+    "paymentTiming": [
+      "early","early","early","early","early","early",
+      "early","early","early","early","early","early"
+    ],
+    "distributionType": "monthly",
+    "icon": "fepi.png",
+    "dataStatus": "manual-required"
+  },
+
+  "JEPQ": {
+    "ticker": "JEPQ",
+    "name": "JPMorgan Nasdaq Equity Premium Income ETF",
+    "market": "US",
+    "sector": "ETF",
+    "currency": "USD",
+    "currentPrice": 55,
+    "annualDividendPerShare": 5.4,
+    "paymentMonths": [1,2,3,4,5,6,7,8,9,10,11,12],
+    "paymentTiming": [
+      "early","early","early","early","early","early",
+      "early","early","early","early","early","early"
+    ],
+    "distributionType": "monthly",
+    "icon": "jepq.png",
     "dataStatus": "manual-required"
   }
 }
