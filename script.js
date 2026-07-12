@@ -794,7 +794,7 @@ const ratio =
 
     <div
       class="ratio-bar"
-      style="width:${ratio}%">
+      style="width:${Math.min(ratio, 100)}%"
     </div>
 
   </div>
