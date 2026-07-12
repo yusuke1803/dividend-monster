@@ -497,7 +497,15 @@ function calculateStockDividend(
     Number(stock.dividend)
   );
 }
-
+function calculatePortfolioValue() {
+  return portfolio.reduce(
+    (total, stock) =>
+      total +
+      Number(stock.shares) *
+      Number(stock.price || 0),
+    0
+  );
+}
 function calculateAnnualDividend() {
   return portfolio.reduce(
     (total, stock) =>
@@ -508,6 +516,7 @@ function calculateAnnualDividend() {
     0
   );
 }
+
 
 function calculateMonthlyExpense() {
   return Object.values(
