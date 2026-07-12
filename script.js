@@ -1050,6 +1050,17 @@ function migratePortfolioData() {
           stock.currency ||
           matchedEntry?.currency ||
           "JPY"
+        price:
+
+  Number(
+
+    stock.price ??
+
+    matchedEntry?.currentPrice ??
+
+    0
+
+  )
       };
     });
 
