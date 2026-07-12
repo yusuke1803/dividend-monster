@@ -729,6 +729,13 @@ function renderPortfolio() {
       .map((stock) => {
         const annualDividend =
           calculateStockDividend(stock);
+        const totalDividend =
+  calculateAnnualDividend();
+
+const ratio =
+  totalDividend > 0
+    ? (annualDividend / totalDividend) * 100
+    : 0;
 
         const symbolText =
           String(stock.name || stock.code)
