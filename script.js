@@ -387,6 +387,11 @@ if (!stockInfo) {
       currency:
         stockInfo.currency ||
         "JPY"
+      　price:
+
+  Number(
+
+    stockInfo.currentPrice || 0
     };
 
     if (editingStockId) {
