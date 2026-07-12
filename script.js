@@ -598,7 +598,8 @@ const totalValue =
     formatYen(
       monthlyDividendValue
     );
-
+portfolioValue.textContent =
+  formatYen(totalValue);
   freedomRate.textContent =
     formatPercent(
       coverageRate
