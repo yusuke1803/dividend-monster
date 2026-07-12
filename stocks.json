@@ -5,6 +5,7 @@
     "market": "JP",
     "sector": "communication",
     "annualDividendPerShare": 80,
+   "currentPrice": 2500,
     "currency": "JPY",
     "dataStatus": "sample"
   },
