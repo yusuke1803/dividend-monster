@@ -18,7 +18,8 @@ const totalAnnualDividend =
 
 const monthlyDividend =
   document.getElementById("monthlyDividend");
-
+const portfolioValue =
+  document.getElementById("portfolioValue");
 const freedomRate =
   document.getElementById("freedomRate");
 
