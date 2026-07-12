@@ -387,7 +387,7 @@ if (!stockInfo) {
 
       currency:
         stockInfo.currency ||
-        "JPY"
+        "JPY",
       　price:
 
   Number(
