@@ -75,7 +75,8 @@ const monsterNextExp=document.getElementById("monsterNextExp");
 const monsterExpBar=document.getElementById("monsterExpBar");
 
 const monsterMessage=document.getElementById("monsterMessage");
-
+const monsterSpecies =
+    document.getElementById("monsterSpecies");
 const monsterImage=document.querySelector(".monster-image");
 
 // ---------- Initialize ----------
