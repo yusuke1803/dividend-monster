@@ -2757,29 +2757,108 @@ function getLocalDateString(date){
 // ========================================
 
 // ========================================
-// Dividend Monsters Ver4.0
+// Dividend Monsters Ver4.2
 // Part 8 / 8
-// Final Initialize + Future Ready
+// Initialize + Navigation
 // ========================================
 
+
 // ========================================
-// 初回モンスター名
+// Part4で使用する進化ダイアログ
+// ========================================
+
+const levelUpDialog =
+    document.getElementById(
+        "levelUpDialog"
+    );
+
+
+// ========================================
+// モンスターデータの初期化
+// ニックネームは一度だけ設定する
 // ========================================
 
 function initializeMonster() {
 
-    if (!monster.name || monster.name === "タマゴン") {
+    monster =
+        monster &&
+        typeof monster === "object"
+            ? monster
+            : {};
 
-        const input = prompt(
-            "相棒の名前を決めましょう！",
-            "タマゴン"
+    monster.level =
+        Math.max(
+            1,
+            Number(
+                monster.level ||
+                1
+            )
         );
 
-        if (input && input.trim()) {
+    monster.exp =
+        Math.max(
+            0,
+            Number(
+                monster.exp ||
+                0
+            )
+        );
 
-            monster.name = input.trim();
+    monster.stage =
+        Math.max(
+            1,
+            Number(
+                monster.stage ||
+                1
+            )
+        );
+
+    if (
+        typeof monster.name !==
+        "string"
+    ) {
+
+        monster.name =
+            "";
+
+    }
+
+    /*
+     * 初回だけニックネームを確認する。
+     * 「タマゴン」のまま確定した場合も、
+     * 次回以降は再表示しない。
+     */
+    if (
+        monster.nameInitialized !==
+        true
+    ) {
+
+        const input =
+            window.prompt(
+                "相棒の名前を決めましょう！",
+                monster.name ||
+                "タマゴン"
+            );
+
+        if (
+            input &&
+            input.trim()
+        ) {
+
+            monster.name =
+                input.trim();
+
+        } else if (
+            !monster.name
+        ) {
+
+            monster.name =
+                "タマゴン";
 
         }
+
+        monster.nameInitialized =
+            true;
 
         saveData();
 
@@ -2787,33 +2866,305 @@ function initializeMonster() {
 
 }
 
+
 // ========================================
-// 将来API更新
+// 累計受取配当
+// ========================================
+
+function calculateReceivedDividendTotal() {
+
+    return dividendHistory.reduce(
+        (total, record) =>
+            total +
+            Number(
+                record.amount ||
+                0
+            ),
+        0
+    );
+
+}
+
+
+// ========================================
+// 累計受取配当の表示
+// ========================================
+
+function renderReceivedDividendTotal() {
+
+    const element =
+        document.getElementById(
+            "receivedDividendTotal"
+        );
+
+    if (!element) {
+
+        return;
+
+    }
+
+    element.textContent =
+        formatYen(
+            calculateReceivedDividendTotal()
+        );
+
+}
+
+
+// ========================================
+// 下部ナビゲーション
+// ========================================
+
+function initializeBottomNavigation() {
+
+    const navButtons =
+        document.querySelectorAll(
+            ".nav-button"
+        );
+
+    navButtons.forEach(
+        button => {
+
+            /*
+             * 初期化が複数回呼ばれても、
+             * イベントを重複登録しない。
+             */
+            if (
+                button.dataset
+                    .navigationInitialized ===
+                "true"
+            ) {
+
+                return;
+
+            }
+
+            button.dataset
+                .navigationInitialized =
+                "true";
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    const targetId =
+                        button.dataset
+                            .scrollTarget;
+
+                    let target =
+                        null;
+
+                    switch (targetId) {
+
+                        case "top":
+
+                            window.scrollTo({
+                                top: 0,
+                                behavior:
+                                    "smooth"
+                            });
+
+                            break;
+
+                        case "dividendCalendar":
+
+                            target =
+                                document.querySelector(
+                                    ".calendar-section"
+                                );
+
+                            break;
+
+                        case "stockList":
+
+                            target =
+                                document.querySelector(
+                                    ".portfolio-section"
+                                );
+
+                            break;
+
+                        case "monsterBookGrid":
+
+                            target =
+                                document.querySelector(
+                                    ".monster-book-section"
+                                );
+
+                            break;
+
+                        default:
+
+                            target =
+                                document.getElementById(
+                                    targetId
+                                );
+
+                            break;
+
+                    }
+
+                    if (target) {
+
+                        target.scrollIntoView({
+                            behavior:
+                                "smooth",
+                            block:
+                                "start"
+                        });
+
+                    }
+
+                    navButtons.forEach(
+                        navButton => {
+
+                            navButton
+                                .classList
+                                .remove(
+                                    "active"
+                                );
+
+                        }
+                    );
+
+                    button
+                        .classList
+                        .add(
+                            "active"
+                        );
+
+                }
+            );
+
+        }
+    );
+
+}
+
+
+// ========================================
+// ダイアログを閉じるボタン
+// ========================================
+
+function initializeDialogCloseButtons() {
+
+    document
+        .querySelectorAll(
+            "[data-close-dialog]"
+        )
+        .forEach(
+            button => {
+
+                if (
+                    button.dataset
+                        .closeInitialized ===
+                    "true"
+                ) {
+
+                    return;
+
+                }
+
+                button.dataset
+                    .closeInitialized =
+                    "true";
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        const dialogId =
+                            button.dataset
+                                .closeDialog;
+
+                        const dialog =
+                            document
+                                .getElementById(
+                                    dialogId
+                                );
+
+                        if (
+                            dialog &&
+                            typeof dialog.close ===
+                            "function"
+                        ) {
+
+                            dialog.close();
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+    const closeLevelUpButton =
+        document.getElementById(
+            "closeLevelUpButton"
+        );
+
+    if (
+        closeLevelUpButton &&
+        closeLevelUpButton.dataset
+            .closeInitialized !==
+        "true"
+    ) {
+
+        closeLevelUpButton.dataset
+            .closeInitialized =
+            "true";
+
+        closeLevelUpButton
+            .addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        levelUpDialog &&
+                        typeof levelUpDialog
+                            .close ===
+                        "function"
+                    ) {
+
+                        levelUpDialog.close();
+
+                    }
+
+                }
+            );
+
+    }
+
+}
+
+
+// ========================================
+// 将来の価格更新
+// 現在はstocks.jsonの固定価格を使用
 // ========================================
 
 async function refreshPrices() {
 
-    // Ver4ではダミー
-    // Ver5でGoogle Finance / TwelveDataへ接続予定
-
-    console.log("価格更新");
+    return;
 
 }
 
+
 // ========================================
-// 将来配当更新
+// 将来の配当データ更新
+// 現在はstocks.jsonの固定データを使用
 // ========================================
 
 async function refreshDividendDatabase() {
 
-    // Ver5予定
-
-    console.log("配当更新");
+    return;
 
 }
 
+
 // ========================================
-// 毎日起動処理
+// 毎日起動時の更新
 // ========================================
 
 async function dailyBoot() {
@@ -2826,36 +3177,13 @@ async function dailyBoot() {
 
     generateUpcomingDividends();
 
-}
-
-// ========================================
-// 初期化
-// ========================================
-
-async function initializeApp() {
-
-    loadData();
-
-    await loadStockDatabase();
-
-    migratePortfolio();
-
-    initializeMonster();
-
-    await checkExchangeRate();
-
-    generateUpcomingDividends();
-saveData();
-    render();
-
-    showHarvestNotification();
-
-    console.log("Dividend Monsters Ver4.1 Started");
+    saveData();
 
 }
 
+
 // ========================================
-// Render Override
+// 全画面描画
 // ========================================
 
 function render() {
@@ -2863,6 +3191,8 @@ function render() {
     renderDashboard();
 
     renderMonster();
+
+    renderReceivedDividendTotal();
 
     renderHarvest();
 
@@ -2876,42 +3206,127 @@ function render() {
 
 }
 
+
 // ========================================
-// Debug
+// アプリ初期化
+// ========================================
+
+async function initializeApp() {
+
+    try {
+
+        loadData();
+
+        await loadStockDatabase();
+
+        migratePortfolio();
+
+        initializeMonster();
+
+        await dailyBoot();
+
+        render();
+
+        showHarvestNotification();
+
+        console.log(
+            "Dividend Monsters Ver4.2 Started"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Dividend Monstersの起動に失敗しました。",
+            error
+        );
+
+        showToast(
+            "アプリの読み込み中にエラーが発生しました。"
+        );
+
+    }
+
+}
+
+
+// ========================================
+// デバッグ用
+// 常に最新データを取得できるようgetterを使用
 // ========================================
 
 window.dm = {
 
-    portfolio,
+    get portfolio() {
 
-    stockDatabase,
+        return portfolio;
 
-    monster,
+    },
 
-    expenses,
+    get stockDatabase() {
 
-    dividendHistory,
+        return stockDatabase;
 
-    upcomingDividends,
+    },
 
-    harvestedDividends,
+    get monster() {
 
-    settings
+        return monster;
+
+    },
+
+    get expenses() {
+
+        return expenses;
+
+    },
+
+    get dividendHistory() {
+
+        return dividendHistory;
+
+    },
+
+    get upcomingDividends() {
+
+        return upcomingDividends;
+
+    },
+
+    get harvestedDividends() {
+
+        return harvestedDividends;
+
+    },
+
+    get settings() {
+
+        return settings;
+
+    },
+
+    render,
+
+    generateUpcomingDividends
 
 };
+
 
 // ========================================
 // App Start
 // ========================================
 
 document.addEventListener(
-
     "DOMContentLoaded",
-
     () => {
+
+        initializeBottomNavigation();
+
+        initializeDialogCloseButtons();
 
         initializeApp();
 
+    },
+    {
+        once: true
     }
-
 );
