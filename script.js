@@ -2144,6 +2144,236 @@ function renderAnalytics(){
 
 }
 // ========================================
+// 実績システム
+// ========================================
+
+const ACHIEVEMENT_RULES = [
+    {
+        icon: "🌱",
+        title: "はじめての収穫",
+        description: "初めて配当を収穫する",
+        check: data =>
+            data.harvestCount >= 1,
+        progress: data =>
+            `${Math.min(data.harvestCount, 1)} / 1回`
+    },
+    {
+        icon: "🧺",
+        title: "収穫の習慣",
+        description: "配当を10回収穫する",
+        check: data =>
+            data.harvestCount >= 10,
+        progress: data =>
+            `${Math.min(data.harvestCount, 10)} / 10回`
+    },
+    {
+        icon: "🌳",
+        title: "熟練の収穫者",
+        description: "配当を50回収穫する",
+        check: data =>
+            data.harvestCount >= 50,
+        progress: data =>
+            `${Math.min(data.harvestCount, 50)} / 50回`
+    },
+    {
+        icon: "💰",
+        title: "配当の芽吹き",
+        description: "累計受取配当10万円を達成する",
+        check: data =>
+            data.receivedTotal >= 100000,
+        progress: data =>
+            `¥${formatYen(
+                Math.min(data.receivedTotal, 100000)
+            )} / ¥100,000`
+    },
+    {
+        icon: "🏆",
+        title: "年間配当50万円",
+        description: "年間予想配当50万円を達成する",
+        check: data =>
+            data.annualDividend >= 500000,
+        progress: data =>
+            `¥${formatYen(
+                Math.min(data.annualDividend, 500000)
+            )} / ¥500,000`
+    },
+    {
+        icon: "🐉",
+        title: "成竜への進化",
+        description: "モンスターレベル30に到達する",
+        check: data =>
+            data.level >= 30,
+        progress: data =>
+            `Lv.${Math.min(data.level, 30)} / Lv.30`
+    },
+    {
+        icon: "👑",
+        title: "伝説への道",
+        description: "モンスターレベル75に到達する",
+        check: data =>
+            data.level >= 75,
+        progress: data =>
+            `Lv.${Math.min(data.level, 75)} / Lv.75`
+    },
+    {
+        icon: "🌟",
+        title: "配当で生活する者",
+        description: "生活防衛率100%を達成する",
+        check: data =>
+            data.freedomRate >= 100,
+        progress: data =>
+            `${Math.min(
+                data.freedomRate,
+                100
+            ).toFixed(1)}% / 100%`
+    }
+];
+
+
+// ========================================
+// 実績判定用データ
+// ========================================
+
+function getAchievementData() {
+
+    const annualDividend =
+        calculateAnnualDividend();
+
+    const monthlyExpense =
+        calculateMonthlyExpense();
+
+    const annualExpense =
+        monthlyExpense * 12;
+
+    const freedomRate =
+        annualExpense > 0
+            ? (
+                annualDividend /
+                annualExpense
+            ) * 100
+            : 0;
+
+    const receivedTotal =
+        dividendHistory.reduce(
+            (total, record) =>
+                total +
+                Number(
+                    record.amount || 0
+                ),
+            0
+        );
+
+    return {
+        harvestCount:
+            dividendHistory.length,
+
+        receivedTotal,
+
+        annualDividend,
+
+        freedomRate,
+
+        level:
+            Number(
+                monster.level || 1
+            )
+    };
+
+}
+
+
+// ========================================
+// 実績表示
+// ========================================
+
+function renderAchievements() {
+
+    const achievementList =
+        document.getElementById(
+            "achievementList"
+        );
+
+    const achievementCount =
+        document.getElementById(
+            "achievementCount"
+        );
+
+    if (!achievementList) {
+
+        return;
+
+    }
+
+    const data =
+        getAchievementData();
+
+    let unlockedCount = 0;
+
+    achievementList.innerHTML =
+        ACHIEVEMENT_RULES.map(
+            achievement => {
+
+                const unlocked =
+                    achievement.check(data);
+
+                if (unlocked) {
+
+                    unlockedCount += 1;
+
+                }
+
+                return `
+                    <article
+                        class="achievement-card ${
+                            unlocked
+                                ? "unlocked"
+                                : "locked"
+                        }"
+                    >
+                        <span class="achievement-icon">
+                            ${achievement.icon}
+                        </span>
+
+                        <div class="achievement-content">
+                            <h3>
+                                ${achievement.title}
+                            </h3>
+
+                            <p>
+                                ${achievement.description}
+                            </p>
+
+                            <small class="achievement-progress">
+                                ${
+                                    unlocked
+                                        ? "達成済み"
+                                        : achievement.progress(data)
+                                }
+                            </small>
+                        </div>
+
+                        <span class="achievement-status">
+                            ${
+                                unlocked
+                                    ? "✓"
+                                    : "🔒"
+                            }
+                        </span>
+                    </article>
+                `;
+
+            }
+        ).join("");
+
+    if (achievementCount) {
+
+        achievementCount.textContent =
+            `${unlockedCount} / ${ACHIEVEMENT_RULES.length}`;
+
+    }
+
+}
+// ========================================
 // Dividend Monsters Ver4.0
 // Part 6 / 8
 // Portfolio + History + Harvest Card
@@ -3261,6 +3491,7 @@ function render() {
     renderCalendar();
 
     renderAnalytics();
+renderAchievements();    
 
 }
 
