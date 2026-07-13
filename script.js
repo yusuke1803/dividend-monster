@@ -1813,7 +1813,7 @@ async function initializeApp() {
     await checkExchangeRate();
 
     generateUpcomingDividends();
-
+saveData();
     render();
 
     showHarvestNotification();
