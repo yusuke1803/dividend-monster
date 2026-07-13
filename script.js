@@ -425,7 +425,9 @@ function generateUpcomingDividends() {
 
                 paymentDate: getLocalDateString(paymentDate),
 
-                harvested: false
+                harvested: previousHarvest.has(
+    `${stock.code}_${getLocalDateString(paymentDate)}`
+)
 
             });
 
