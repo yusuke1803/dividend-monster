@@ -1766,7 +1766,65 @@ function renderMonster() {
 renderMonsterBook();
 }
 
+// ========================================
+// モンスター図鑑表示
+// ========================================
 
+function renderMonsterBook() {
+
+    const cards =
+        document.querySelectorAll(
+            ".monster-book-card"
+        );
+
+    let unlockedCount = 0;
+
+    cards.forEach((card, index) => {
+
+        const stage =
+            MONSTER_STAGES[index];
+
+        if (!stage) {
+
+            return;
+
+        }
+
+        const isUnlocked =
+            Number(monster.level || 1) >=
+            stage.level;
+
+        card.classList.toggle(
+            "unlocked",
+            isUnlocked
+        );
+
+        card.classList.toggle(
+            "locked",
+            !isUnlocked
+        );
+
+        if (isUnlocked) {
+
+            unlockedCount += 1;
+
+        }
+
+    });
+
+    const countElement =
+        document.getElementById(
+            "monsterBookCount"
+        );
+
+    if (countElement) {
+
+        countElement.textContent =
+            `${unlockedCount} / ${MONSTER_STAGES.length}`;
+
+    }
+
+}
 // ========================================
 // 状況別メッセージ
 // ========================================
