@@ -501,13 +501,28 @@ function harvestDividend(id){
 
         );
 
-    if(!item){
+if (!item) {
 
-        return;
+    return;
 
-    }
+}
 
-    item.harvested=true;
+const alreadyHarvested =
+    harvestedDividends.some(
+        harvestedItem =>
+            harvestedItem.code === item.code &&
+            harvestedItem.paymentDate === item.paymentDate
+    );
+
+if (alreadyHarvested) {
+
+    showToast("この配当はすでに収穫済みです。");
+
+    return;
+
+}
+
+item.harvested = true;
 
     harvestedDividends.push(item);
 
