@@ -375,15 +375,13 @@ function generateUpcomingDividends() {
             if (timing === "mid") day = 15;
             if (timing === "late") day = 28;
 
-            const year =
-    today.getFullYear();
+           const year = today.getFullYear();
 
-const paymentDate =
-    new Date(
-        year,
-        month - 1,
-        day
-    );
+let paymentDate = ...
+
+if (paymentDate < today) {
+    ...
+}
 
             let amount =
                 Number(master.annualDividendPerShare) *
@@ -651,7 +649,64 @@ image:"🌟"
 }
 
 ];
+// ========================================
+// モンスター種族判定
+// ========================================
 
+function getMonsterSpecies(){
+
+    const sectors = calculateSectorData();
+
+    let topSector = "";
+
+    let max = 0;
+
+    Object.entries(sectors).forEach(([sector,value])=>{
+
+        if(value>max){
+
+            max=value;
+            topSector=sector;
+
+        }
+
+    });
+
+    switch(topSector){
+
+        case "情報技術":
+            return "⚡ サイバードラゴン";
+
+        case "金融":
+            return "💰 ゴールドドラゴン";
+
+        case "ヘルスケア":
+            return "🌿 セイントドラゴン";
+
+        case "エネルギー":
+            return "🔥 フレイムドラゴン";
+
+        case "生活必需品":
+            return "🌳 フォレストドラゴン";
+
+        case "資本財":
+            return "🛡️ アイアンドラゴン";
+
+        case "通信":
+            return "📡 サンダードラゴン";
+
+        case "公益":
+            return "💧 ウォータードラゴン";
+
+        case "不動産":
+            return "🏰 ゴーレムドラゴン";
+
+        default:
+            return "🐉 ドラゴン";
+
+    }
+
+}
 // ========================================
 // レベル更新
 // ========================================
@@ -723,6 +778,12 @@ function renderMonster(){
     monsterName.textContent=
 
         monster.name;
+    if (monsterSpecies) {
+
+    monsterSpecies.textContent =
+        getMonsterSpecies();
+
+}
 
     monsterLevel.textContent=
 
