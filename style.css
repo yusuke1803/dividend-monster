@@ -1466,3 +1466,98 @@ select:focus-visible {
     max-width: none;
   }
 }
+/* =========================================
+   Analytics
+========================================= */
+
+.analytics-grid{
+display:grid;
+gap:16px;
+}
+
+.analytics-card{
+background:#fff;
+padding:20px;
+border-radius:20px;
+box-shadow:var(--shadow-sm);
+}
+
+.analytics-card h3{
+margin-bottom:12px;
+font-size:18px;
+}
+
+.analytics-wide{
+grid-column:1/-1;
+}
+
+.chart-placeholder{
+height:220px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:var(--surface-soft);
+border-radius:16px;
+color:var(--sub);
+font-size:14px;
+}
+
+/* =========================================
+   Achievement
+========================================= */
+
+.achievement-list{
+display:grid;
+gap:12px;
+}
+
+.achievement-card{
+display:flex;
+align-items:center;
+gap:16px;
+padding:18px;
+background:#fff;
+border-radius:18px;
+box-shadow:var(--shadow-sm);
+}
+
+.achievement-card.locked{
+opacity:.45;
+filter:grayscale(1);
+}
+
+.achievement-icon{
+font-size:32px;
+}
+
+/* =========================================
+   Advertisement
+========================================= */
+
+.advertisement-area{
+margin-top:40px;
+padding:30px;
+border-radius:22px;
+background:linear-gradient(135deg,#f3f3f3,#ffffff);
+border:2px dashed #cfcfcf;
+text-align:center;
+color:#777;
+}
+
+.advertisement-area small{
+display:block;
+margin-bottom:8px;
+font-weight:700;
+letter-spacing:.15em;
+}
+
+/* =========================================
+   Species
+========================================= */
+
+.monster-species{
+margin-top:4px;
+color:var(--gold);
+font-weight:800;
+font-size:14px;
+}
