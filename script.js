@@ -4403,7 +4403,9 @@ async function initializeApp() {
 
         await loadStockDatabase();
 
-        migratePortfolio();
+initializePortfolioControls();
+
+migratePortfolio();
 
         initializeMonster();
 
