@@ -375,19 +375,15 @@ function generateUpcomingDividends() {
             if (timing === "mid") day = 15;
             if (timing === "late") day = 28;
 
-            let year = today.getFullYear();
+            const year =
+    today.getFullYear();
 
-            let paymentDate = new Date(year, month - 1, day);
-
-            if (paymentDate < today) {
-
-                paymentDate = new Date(
-                    year + 1,
-                    month - 1,
-                    day
-                );
-
-            }
+const paymentDate =
+    new Date(
+        year,
+        month - 1,
+        day
+    );
 
             let amount =
                 Number(master.annualDividendPerShare) *
