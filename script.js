@@ -1763,7 +1763,7 @@ function renderMonster() {
             getMonsterMessage();
 
     }
-
+renderMonsterBook();
 }
 
 
