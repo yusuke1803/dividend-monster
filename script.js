@@ -577,7 +577,7 @@ function harvestAll(){
 
 }
 // ========================================
-// Dividend Monsters Ver4.0
+// Dividend Monsters Ver4.1
 // Part 4 / 8
 // Monster System
 // ========================================
@@ -587,312 +587,550 @@ function harvestAll(){
 // ========================================
 
 const MONSTER_STAGES = [
-
-{
-level:1,
-name:"タマゴン",
-image:"🥚"
-},
-
-{
-level:5,
-name:"プチモン",
-image:"🐥"
-},
-
-{
-level:10,
-name:"リーフモン",
-image:"🦎"
-},
-
-{
-level:15,
-name:"ウッドモン",
-image:"🦖"
-},
-
-{
-level:20,
-name:"フレイムモン",
-image:"🐉"
-},
-
-{
-level:30,
-name:"アースドラゴン",
-image:"🐲"
-},
-
-{
-level:40,
-name:"エメラルドドラゴン",
-image:"🐲"
-},
-
-{
-level:55,
-name:"セレスドラゴン",
-image:"🐉"
-},
-
-{
-level:75,
-name:"レジェンドドラゴン",
-image:"👑"
-},
-
-{
-level:100,
-name:"ディビデンドキング",
-image:"🌟"
-
-}
-
+    {
+        level: 1,
+        name: "コインエッグ",
+        image: "🥚"
+    },
+    {
+        level: 5,
+        name: "ミニホッパー",
+        image: "🐣"
+    },
+    {
+        level: 10,
+        name: "リーフテイル",
+        image: "🦎"
+    },
+    {
+        level: 15,
+        name: "グロウリザード",
+        image: "🦖"
+    },
+    {
+        level: 20,
+        name: "フレアドレイク",
+        image: "🐉"
+    },
+    {
+        level: 30,
+        name: "フォレストワイバーン",
+        image: "🐲"
+    },
+    {
+        level: 40,
+        name: "アクアセラフ",
+        image: "🌊"
+    },
+    {
+        level: 55,
+        name: "スカイロード",
+        image: "⚡"
+    },
+    {
+        level: 75,
+        name: "ゴールドエンペラー",
+        image: "👑"
+    },
+    {
+        level: 100,
+        name: "ディビデンドタイタン",
+        image: "🌟"
+    }
 ];
+
+
 // ========================================
-// モンスター種族判定
+// レベルに対応する進化段階を取得
 // ========================================
 
-function getMonsterSpecies(){
+function getMonsterStageByLevel(level) {
 
-    const sectors = calculateSectorData();
+    let currentStage =
+        MONSTER_STAGES[0];
 
-    let topSector = "";
+    MONSTER_STAGES.forEach(stage => {
 
-    let max = 0;
+        if (level >= stage.level) {
 
-    Object.entries(sectors).forEach(([sector,value])=>{
-
-        if(value>max){
-
-            max=value;
-            topSector=sector;
+            currentStage = stage;
 
         }
 
     });
 
-    switch(topSector){
+    return currentStage;
+
+}
+
+
+// ========================================
+// 次のレベルに必要なEXP
+// ========================================
+
+function getRequiredExp(level) {
+
+    return Math.max(
+        100,
+        Number(level || 1) * 100
+    );
+
+}
+
+
+// ========================================
+// モンスター種族判定
+// 保有銘柄の年間配当が最も大きい
+// セクターによって種族を決定
+// ========================================
+
+function getMonsterSpecies() {
+
+    const sectors =
+        calculateSectorData();
+
+    let topSector = "";
+
+    let highestDividend = 0;
+
+    Object.entries(sectors)
+        .forEach(([sector, value]) => {
+
+            const dividend =
+                Number(value || 0);
+
+            if (
+                dividend >
+                highestDividend
+            ) {
+
+                highestDividend =
+                    dividend;
+
+                topSector =
+                    sector;
+
+            }
+
+        });
+
+    switch (topSector) {
 
         case "情報技術":
+        case "IT":
+        case "technology":
             return "⚡ サイバードラゴン";
 
         case "金融":
-            return "💰 ゴールドドラゴン";
+        case "finance":
+            return "💰 ゴールドライオン";
 
         case "ヘルスケア":
-            return "🌿 セイントドラゴン";
+        case "healthcare":
+            return "🌿 セージフェニックス";
 
         case "エネルギー":
+        case "energy":
             return "🔥 フレイムドラゴン";
 
         case "生活必需品":
-            return "🌳 フォレストドラゴン";
+        case "consumer staples":
+            return "🌳 フォレストガーディアン";
 
         case "資本財":
-            return "🛡️ アイアンドラゴン";
+        case "industrials":
+            return "🛡️ アイアンガーディアン";
 
         case "通信":
-            return "📡 サンダードラゴン";
+        case "communication":
+        case "communication services":
+            return "📡 スカイホーク";
 
         case "公益":
-            return "💧 ウォータードラゴン";
+        case "utilities":
+            return "💧 アクアスピリット";
 
         case "不動産":
-            return "🏰 ゴーレムドラゴン";
+        case "REIT":
+        case "real estate":
+            return "🏰 ストーンゴーレム";
+
+        case "ETF":
+        case "etf":
+            return "✨ ディビデンドスピリット";
 
         default:
-            return "🐉 ドラゴン";
+            return "🐉 ノーマルドラゴン";
 
     }
 
 }
+
+
 // ========================================
 // レベル更新
 // ========================================
 
-function updateMonsterLevel(){
+function updateMonsterLevel() {
 
-    while(
+    const previousLevel =
+        Number(monster.level || 1);
 
+    const previousStage =
+        getMonsterStageByLevel(
+            previousLevel
+        );
+
+    monster.level =
+        previousLevel;
+
+    monster.exp =
+        Math.max(
+            0,
+            Number(monster.exp || 0)
+        );
+
+    while (
         monster.exp >=
+        getRequiredExp(monster.level)
+    ) {
 
-        monster.level*100
+        monster.exp -=
+            getRequiredExp(
+                monster.level
+            );
 
-    ){
-
-        monster.exp-=
-
-            monster.level*100;
-
-        monster.level++;
+        monster.level += 1;
 
     }
 
     updateMonsterStage();
 
+    const currentStage =
+        getMonsterStageByLevel(
+            monster.level
+        );
+
+    if (
+        monster.level >
+        previousLevel
+    ) {
+
+        showToast(
+            `🎉 Lv.${monster.level}になりました！`
+        );
+
+    }
+
+    if (
+        currentStage.level >
+        previousStage.level
+    ) {
+
+        showEvolutionDialog(
+            previousStage,
+            currentStage
+        );
+
+    }
+
 }
 
+
 // ========================================
-// 進化判定
+// 進化段階更新
 // ========================================
 
-function updateMonsterStage(){
+function updateMonsterStage() {
 
-    let current=
+    const currentStage =
+        getMonsterStageByLevel(
+            Number(monster.level || 1)
+        );
 
-        MONSTER_STAGES[0];
+    monster.stage =
+        currentStage.level;
 
-    MONSTER_STAGES.forEach(stage=>{
+    monster.stageName =
+        currentStage.name;
 
-        if(monster.level>=stage.level){
+}
 
-            current=stage;
+
+// ========================================
+// 進化演出
+// ========================================
+
+function showEvolutionDialog(
+    previousStage,
+    currentStage
+) {
+
+    const levelUpMonsterImage =
+        document.getElementById(
+            "levelUpMonsterImage"
+        );
+
+    const levelUpTitle =
+        document.getElementById(
+            "levelUpTitle"
+        );
+
+    const levelUpMessage =
+        document.getElementById(
+            "levelUpMessage"
+        );
+
+    if (levelUpMonsterImage) {
+
+        levelUpMonsterImage.textContent =
+            currentStage.image;
+
+    }
+
+    if (levelUpTitle) {
+
+        levelUpTitle.textContent =
+            `${currentStage.name}へ進化！`;
+
+    }
+
+    if (levelUpMessage) {
+
+        levelUpMessage.textContent =
+            `${previousStage.name}から${currentStage.name}へ進化しました。`;
+
+    }
+
+    if (
+        levelUpDialog &&
+        typeof levelUpDialog.showModal ===
+        "function"
+    ) {
+
+        levelUpDialog.showModal();
+
+    } else {
+
+        showToast(
+            `✨ ${currentStage.name}へ進化しました！`
+        );
+
+    }
+
+}
+
+
+// ========================================
+// モンスター表示
+// ========================================
+
+function renderMonster() {
+
+    updateMonsterStage();
+
+    const currentStage =
+        getMonsterStageByLevel(
+            Number(monster.level || 1)
+        );
+
+    const requiredExp =
+        getRequiredExp(
+            Number(monster.level || 1)
+        );
+
+    const currentExp =
+        Math.max(
+            0,
+            Number(monster.exp || 0)
+        );
+
+    const progressRate =
+        requiredExp > 0
+            ? (
+                currentExp /
+                requiredExp
+            ) * 100
+            : 0;
+
+    /*
+     * monster.nameは相棒のニックネームとして維持。
+     * 進化名はmonster.stageNameへ保存する。
+     */
+    if (!monster.name) {
+
+        monster.name =
+            "タマゴン";
+
+    }
+
+    if (monsterName) {
+
+        monsterName.textContent =
+            monster.name;
+
+    }
+
+    if (monsterSpecies) {
+
+        monsterSpecies.textContent =
+            getMonsterSpecies();
+
+    }
+
+    if (monsterLevel) {
+
+        monsterLevel.textContent =
+            monster.level;
+
+    }
+
+    if (monsterExp) {
+
+        monsterExp.textContent =
+            formatNumber(
+                currentExp
+            );
+
+    }
+
+    if (monsterNextExp) {
+
+        monsterNextExp.textContent =
+            formatNumber(
+                requiredExp
+            );
+
+    }
+
+    if (monsterExpBar) {
+
+        monsterExpBar.style.width =
+            `${Math.min(
+                progressRate,
+                100
+            )}%`;
+
+    }
+
+    if (monsterImage) {
+
+        monsterImage.textContent =
+            currentStage.image;
+
+        monsterImage.setAttribute(
+            "title",
+            currentStage.name
+        );
+
+    }
+
+    if (monsterMessage) {
+
+        monsterMessage.textContent =
+            getMonsterMessage();
+
+    }
+
+}
+
+
+// ========================================
+// 状況別メッセージ
+// ========================================
+
+function getMonsterMessage() {
+
+    const harvestable =
+        getHarvestableDividends();
+
+    if (
+        harvestable.length > 0
+    ) {
+
+        return `今日は${harvestable.length}件の配当を収穫できるよ！`;
+
+    }
+
+    const nextDividend =
+        getNextDividend();
+
+    if (nextDividend) {
+
+        const remainingDays =
+            daysUntil(
+                nextDividend.paymentDate
+            );
+
+        if (remainingDays === 0) {
+
+            return "今日は収穫日だよ！";
 
         }
 
-    });
+        if (remainingDays <= 3) {
 
-    monster.stage=current.level;
+            return `あと${remainingDays}日で${nextDividend.name}の配当だよ！`;
 
-    monster.name=current.name;
+        }
 
-}
-
-// ========================================
-// 表示
-// ========================================
-
-function renderMonster(){
-
-    updateMonsterStage();
-
-    const current=
-
-        MONSTER_STAGES.find(
-
-            x=>x.level===monster.stage
-
-        );
-
-    monsterName.textContent=
-
-        monster.name;
-    if (monsterSpecies) {
-
-    monsterSpecies.textContent =
-        getMonsterSpecies();
-
-}
-
-    monsterLevel.textContent=
-
-        monster.level;
-
-    monsterExp.textContent=
-
-        formatNumber(monster.exp);
-
-    monsterNextExp.textContent=
-
-        formatNumber(
-
-            monster.level*100
-
-        );
-
-    monsterExpBar.style.width=
-
-        `${
-            Math.min(
-
-                monster.exp/
-
-                (monster.level*100)
-
-                *100,
-
-                100
-
-            )
-
-        }%`;
-
-    monsterImage.textContent=
-
-        current.image;
-
-    monsterMessage.textContent=
-
-        getMonsterMessage();
-
-}
-
-// ========================================
-// メッセージ
-// ========================================
-
-function getMonsterMessage(){
-
-    const harvest=
-
-        getHarvestableDividends();
-
-    if(harvest.length>0){
-
-        return "今日は収穫できるよ！";
+        return `次の収穫まであと${remainingDays}日です。`;
 
     }
 
-    const next=
+    if (
+        portfolio.length === 0
+    ) {
 
-        getNextDividend();
-
-    if(next){
-
-        const days=
-
-            daysUntil(
-
-                next.paymentDate
-
-            );
-
-        return `次の収穫まであと${days}日`;
+        return "最初の銘柄を登録して、冒険を始めよう！";
 
     }
 
-    return "新しい銘柄を追加しよう！";
+    return "次の配当を楽しみに待とう！";
 
 }
 
+
 // ========================================
-// 日数
+// 指定日までの日数
 // ========================================
 
-function daysUntil(dateString){
+function daysUntil(dateString) {
 
-    const today=
+    const target =
+        new Date(
+            `${dateString}T00:00:00`
+        );
 
+    if (
+        Number.isNaN(
+            target.getTime()
+        )
+    ) {
+
+        return 0;
+
+    }
+
+    const today =
         new Date();
 
-    const target=
-
-        new Date(dateString);
+    today.setHours(
+        0,
+        0,
+        0,
+        0
+    );
 
     return Math.max(
-
         0,
-
         Math.ceil(
-
-            (target-today)/
-
+            (
+                target.getTime() -
+                today.getTime()
+            ) /
             86400000
-
         )
-
     );
 
 }
