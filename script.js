@@ -1,14 +1,47 @@
 // ========================================
-// Dividend Monsters Ver4.0
-// Main Controller
+// Dividend Monsters Ver5.0
 // Part 1 / 8
+// Core State + Storage + DOM
 // ========================================
 
-// ---------- Storage ----------
+"use strict";
 
-const STORAGE_KEY = "dividend-monsters-v4";
 
-// ---------- Global ----------
+// ========================================
+// App Information
+// ========================================
+
+const APP_VERSION =
+    "5.0.0";
+
+const STORAGE_KEY =
+    "dividend-monsters-v4";
+
+
+// ========================================
+// Default State
+// ========================================
+
+const DEFAULT_SETTINGS = {
+    exchangeRate: 150,
+    lastRateUpdate: null,
+    notifications: true,
+    theme: "forest"
+};
+
+const DEFAULT_MONSTER = {
+    name: "タマゴン",
+    nameInitialized: false,
+    level: 1,
+    exp: 0,
+    stage: 1,
+    stageName: "幼体"
+};
+
+
+// ========================================
+// Application State
+// ========================================
 
 let stockDatabase = {};
 
@@ -23,139 +56,518 @@ let upcomingDividends = [];
 let harvestedDividends = [];
 
 let settings = {
-
-    exchangeRate:150,
-
-    lastRateUpdate:null,
-
-    notifications:true,
-
-    theme:"forest"
-
+    ...DEFAULT_SETTINGS
 };
 
-let monster={
-
-    name:"タマゴン",
-
-    level:1,
-
-    exp:0,
-
-    stage:1
-
+let monster = {
+    ...DEFAULT_MONSTER
 };
 
-// ---------- DOM ----------
 
-const stockList=document.getElementById("stockList");
+// ========================================
+// Main DOM Elements
+// ========================================
 
-const dividendCalendar=document.getElementById("dividendCalendar");
+const stockList =
+    document.getElementById(
+        "stockList"
+    );
 
-const dividendHistoryList=document.getElementById("dividendHistoryList");
+const dividendCalendar =
+    document.getElementById(
+        "dividendCalendar"
+    );
 
-const totalAnnualDividend=document.getElementById("totalAnnualDividend");
+const dividendHistoryList =
+    document.getElementById(
+        "dividendHistoryList"
+    );
 
-const monthlyDividend=document.getElementById("monthlyDividend");
+const totalAnnualDividend =
+    document.getElementById(
+        "totalAnnualDividend"
+    );
 
-const portfolioValue=document.getElementById("portfolioValue");
+const monthlyDividend =
+    document.getElementById(
+        "monthlyDividend"
+    );
 
-const freedomRate=document.getElementById("freedomRate");
+const portfolioValue =
+    document.getElementById(
+        "portfolioValue"
+    );
 
-const freedomBar=document.getElementById("freedomBar");
+const freedomRate =
+    document.getElementById(
+        "freedomRate"
+    );
 
-const monsterName=document.getElementById("monsterName");
+const freedomBar =
+    document.getElementById(
+        "freedomBar"
+    );
 
-const monsterLevel=document.getElementById("monsterLevel");
+const monsterName =
+    document.getElementById(
+        "monsterName"
+    );
 
-const monsterExp=document.getElementById("monsterExp");
-
-const monsterNextExp=document.getElementById("monsterNextExp");
-
-const monsterExpBar=document.getElementById("monsterExpBar");
-
-const monsterMessage=document.getElementById("monsterMessage");
 const monsterSpecies =
-    document.getElementById("monsterSpecies");
-const monsterImage=document.querySelector(".monster-image");
+    document.getElementById(
+        "monsterSpecies"
+    );
 
-// ---------- Initialize ----------
+const monsterLevel =
+    document.getElementById(
+        "monsterLevel"
+    );
 
+const monsterExp =
+    document.getElementById(
+        "monsterExp"
+    );
+
+const monsterNextExp =
+    document.getElementById(
+        "monsterNextExp"
+    );
+
+const monsterExpBar =
+    document.getElementById(
+        "monsterExpBar"
+    );
+
+const monsterMessage =
+    document.getElementById(
+        "monsterMessage"
+    );
+
+const monsterImage =
+    document.querySelector(
+        ".monster-image"
+    );
+
+
+// ========================================
+// Safe JSON Parse
+// ========================================
+
+function parseStoredJson(rawData) {
+
+    if (
+        typeof rawData !== "string" ||
+        rawData.trim() === ""
+    ) {
+
+        return null;
+
+    }
+
+    try {
+
+        return JSON.parse(
+            rawData
+        );
+
+    } catch (error) {
+
+        console.error(
+            "保存データの解析に失敗しました。",
+            error
+        );
+
+        return null;
+
+    }
+
+}
+
+
+// ========================================
+// Normalize Portfolio
+// ========================================
+
+function normalizePortfolioData(data) {
+
+    if (!Array.isArray(data)) {
+
+        return [];
+
+    }
+
+    return data
+        .filter(
+            item =>
+                item &&
+                typeof item === "object"
+        )
+        .map(
+            item => ({
+                id:
+                    typeof item.id === "string"
+                        ? item.id
+                        : "",
+
+                code:
+                    String(
+                        item.code || ""
+                    )
+                        .trim()
+                        .toUpperCase(),
+
+                shares:
+                    Math.max(
+                        0,
+                        Number(
+                            item.shares || 0
+                        )
+                    ),
+
+                market:
+                    String(
+                        item.market || ""
+                    ),
+
+                currency:
+                    String(
+                        item.currency || "JPY"
+                    )
+            })
+        )
+        .filter(
+            item =>
+                item.code !== "" &&
+                item.shares > 0
+        );
+
+}
+
+
+// ========================================
+// Normalize History
+// ========================================
+
+function normalizeHistoryData(data) {
+
+    if (!Array.isArray(data)) {
+
+        return [];
+
+    }
+
+    return data.filter(
+        item =>
+            item &&
+            typeof item === "object"
+    );
+
+}
+
+
+// ========================================
+// Normalize Expenses
+// ========================================
+
+function normalizeExpenseData(data) {
+
+    if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data)
+    ) {
+
+        return {};
+
+    }
+
+    const normalized = {};
+
+    Object.entries(data)
+        .forEach(
+            ([key, value]) => {
+
+                normalized[key] =
+                    Math.max(
+                        0,
+                        Number(
+                            value || 0
+                        )
+                    );
+
+            }
+        );
+
+    return normalized;
+
+}
+
+
+// ========================================
+// Normalize Settings
+// ========================================
+
+function normalizeSettingsData(data) {
+
+    const source =
+        data &&
+        typeof data === "object"
+            ? data
+            : {};
+
+    return {
+        ...DEFAULT_SETTINGS,
+
+        ...source,
+
+        exchangeRate:
+            Number.isFinite(
+                Number(
+                    source.exchangeRate
+                )
+            ) &&
+            Number(
+                source.exchangeRate
+            ) > 0
+                ? Number(
+                    source.exchangeRate
+                )
+                : DEFAULT_SETTINGS
+                    .exchangeRate,
+
+        notifications:
+            source.notifications !==
+            false
+    };
+
+}
+
+
+// ========================================
+// Normalize Monster
+// ========================================
+
+function normalizeMonsterData(data) {
+
+    const source =
+        data &&
+        typeof data === "object"
+            ? data
+            : {};
+
+    return {
+        ...DEFAULT_MONSTER,
+
+        ...source,
+
+        name:
+            String(
+                source.name ||
+                DEFAULT_MONSTER.name
+            )
+                .trim() ||
+            DEFAULT_MONSTER.name,
+
+        nameInitialized:
+            source.nameInitialized ===
+            true,
+
+        level:
+            Math.max(
+                1,
+                Math.floor(
+                    Number(
+                        source.level || 1
+                    )
+                )
+            ),
+
+        exp:
+            Math.max(
+                0,
+                Number(
+                    source.exp || 0
+                )
+            ),
+
+        stage:
+            Math.max(
+                1,
+                Number(
+                    source.stage || 1
+                )
+            )
+    };
+
+}
 
 
 // ========================================
 // Load stocks.json
 // ========================================
 
-async function loadStockDatabase(){
+async function loadStockDatabase() {
 
-    const response=await fetch("./stocks.json",{cache:"no-store"});
+    const response =
+        await fetch(
+            "./stocks.json",
+            {
+                cache: "no-store"
+            }
+        );
 
-    stockDatabase=await response.json();
+    if (!response.ok) {
+
+        throw new Error(
+            `stocks.jsonの読込みに失敗しました。HTTP ${response.status}`
+        );
+
+    }
+
+    const data =
+        await response.json();
+
+    if (
+        !data ||
+        typeof data !== "object" ||
+        Array.isArray(data)
+    ) {
+
+        throw new Error(
+            "stocks.jsonの形式が正しくありません。"
+        );
+
+    }
+
+    stockDatabase =
+        data;
 
 }
 
+
 // ========================================
-// Save
+// Save Application Data
 // ========================================
-function saveData(){
 
-    localStorage.setItem(
+function saveData() {
 
-        STORAGE_KEY,
+    const data = {
+        appVersion:
+            APP_VERSION,
 
-        JSON.stringify({
+        portfolio,
 
-            portfolio,
+        expenses,
 
-            expenses,
+        dividendHistory,
 
-            dividendHistory,
+        upcomingDividends,
 
-            harvestedDividends,
+        harvestedDividends,
 
-            upcomingDividends,
+        monster,
 
-            monster,
+        settings,
 
-            settings
+        savedAt:
+            new Date()
+                .toISOString()
+    };
 
-        })
+    try {
 
-    );
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(data)
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "データの保存に失敗しました。",
+            error
+        );
+
+        return false;
+
+    }
 
 }
+
+
 // ========================================
-// Load
+// Load Application Data
 // ========================================
 
-function loadData(){
+function loadData() {
 
-    const raw=
+    let rawData = null;
 
-        localStorage.getItem(STORAGE_KEY);
+    try {
 
-    if(!raw){
+        rawData =
+            localStorage.getItem(
+                STORAGE_KEY
+            );
+
+    } catch (error) {
+
+        console.error(
+            "保存データを読み込めませんでした。",
+            error
+        );
 
         return;
 
     }
 
-    const data=JSON.parse(raw);
+    const data =
+        parseStoredJson(
+            rawData
+        );
 
-    portfolio=data.portfolio||[];
+    if (!data) {
 
-    expenses=data.expenses||{};
+        return;
 
-    dividendHistory=data.dividendHistory||[];
+    }
 
-harvestedDividends=data.harvestedDividends||[];
+    portfolio =
+        normalizePortfolioData(
+            data.portfolio
+        );
 
-upcomingDividends=data.upcomingDividends||[];
+    expenses =
+        normalizeExpenseData(
+            data.expenses
+        );
 
-monster=data.monster||monster;
+    dividendHistory =
+        normalizeHistoryData(
+            data.dividendHistory
+        );
 
-settings=data.settings||settings;
+    upcomingDividends =
+        normalizeHistoryData(
+            data.upcomingDividends
+        );
+
+    harvestedDividends =
+        normalizeHistoryData(
+            data.harvestedDividends
+        );
+
+    monster =
+        normalizeMonsterData(
+            data.monster
+        );
+
+    settings =
+        normalizeSettingsData(
+            data.settings
+        );
 
 }
 // ========================================
