@@ -571,177 +571,812 @@ function loadData() {
 
 }
 // ========================================
-// Dividend Monsters Ver4.0
+// Dividend Monsters Ver5.0
 // Part 2 / 8
+// Portfolio Migration + Core Calculations
 // ========================================
 
+
 // ========================================
-// Portfolio Migration
+// 安全なID生成
+// ========================================
+
+function createAppId(prefix = "item") {
+
+    if (
+        window.crypto &&
+        typeof window.crypto.randomUUID ===
+        "function"
+    ) {
+
+        return window.crypto.randomUUID();
+
+    }
+
+    return (
+        `${prefix}_${Date.now()}_` +
+        Math.random()
+            .toString(16)
+            .slice(2)
+    );
+
+}
+
+
+// ========================================
+// 銘柄コードの正規化
+// stocks.jsonのキーとtickerの両方に対応
+// ========================================
+
+function resolveStockCode(code) {
+
+    const normalizedCode =
+        String(
+            code || ""
+        )
+            .trim()
+            .toUpperCase();
+
+    if (!normalizedCode) {
+
+        return "";
+
+    }
+
+    if (
+        stockDatabase[
+            normalizedCode
+        ]
+    ) {
+
+        return normalizedCode;
+
+    }
+
+    const matchedEntry =
+        Object.entries(
+            stockDatabase
+        )
+            .find(
+                ([databaseCode, master]) => {
+
+                    const ticker =
+                        String(
+                            master?.ticker || ""
+                        )
+                            .trim()
+                            .toUpperCase();
+
+                    return (
+                        ticker ===
+                        normalizedCode
+                    );
+
+                }
+            );
+
+    return matchedEntry
+        ? matchedEntry[0]
+        : normalizedCode;
+
+}
+
+
+// ========================================
+// 保存済みポートフォリオの移行
+// 旧バージョンのデータを安全に補正
 // ========================================
 
 function migratePortfolio() {
 
-    portfolio = portfolio.map((item) => {
+    const migratedPortfolio =
+        portfolio
+            .map(
+                item => {
 
-        const master = stockDatabase[item.code];
+                    const resolvedCode =
+                        resolveStockCode(
+                            item.code
+                        );
 
-        if (!master) {
+                    const master =
+                        stockDatabase[
+                            resolvedCode
+                        ];
 
-            return item;
+                    if (!master) {
+
+                        console.warn(
+                            "stocks.jsonに存在しない銘柄を除外しました。",
+                            item.code
+                        );
+
+                        return null;
+
+                    }
+
+                    const shares =
+                        Number(
+                            item.shares || 0
+                        );
+
+                    if (
+                        !Number.isFinite(
+                            shares
+                        ) ||
+                        shares <= 0
+                    ) {
+
+                        return null;
+
+                    }
+
+                    return {
+                        id:
+                            item.id ||
+                            createAppId(
+                                "stock"
+                            ),
+
+                        code:
+                            resolvedCode,
+
+                        shares,
+
+                        market:
+                            String(
+                                master.market ||
+                                item.market ||
+                                "JP"
+                            ),
+
+                        currency:
+                            String(
+                                master.currency ||
+                                item.currency ||
+                                "JPY"
+                            )
+                    };
+
+                }
+            )
+            .filter(Boolean);
+
+    /*
+     * 同じ銘柄が複数登録されている旧データは、
+     * 株数を合算して1件に統合する。
+     */
+    const mergedPortfolio =
+        new Map();
+
+    migratedPortfolio.forEach(
+        item => {
+
+            const existing =
+                mergedPortfolio.get(
+                    item.code
+                );
+
+            if (existing) {
+
+                existing.shares +=
+                    Number(
+                        item.shares || 0
+                    );
+
+                return;
+
+            }
+
+            mergedPortfolio.set(
+                item.code,
+                {
+                    ...item
+                }
+            );
 
         }
+    );
 
-        return {
-
-            id: item.id || crypto.randomUUID(),
-
-            code: master.ticker,
-
-            shares: Number(item.shares || 0),
-
-            market: master.market,
-
-            currency: master.currency
-
-        };
-
-    });
+    portfolio =
+        Array.from(
+            mergedPortfolio.values()
+        );
 
 }
 
+
 // ========================================
-// Annual Dividend
+// 為替レート取得
+// ========================================
+
+function getExchangeRate() {
+
+    const rate =
+        Number(
+            settings.exchangeRate
+        );
+
+    if (
+        Number.isFinite(rate) &&
+        rate > 0
+    ) {
+
+        return rate;
+
+    }
+
+    return DEFAULT_SETTINGS
+        .exchangeRate;
+
+}
+
+
+// ========================================
+// 金額を円換算
+// ========================================
+
+function convertToYen(
+    amount,
+    currency
+) {
+
+    const numericAmount =
+        Number(
+            amount || 0
+        );
+
+    if (
+        !Number.isFinite(
+            numericAmount
+        )
+    ) {
+
+        return 0;
+
+    }
+
+    if (
+        String(currency)
+            .toUpperCase() ===
+        "USD"
+    ) {
+
+        return (
+            numericAmount *
+            getExchangeRate()
+        );
+
+    }
+
+    return numericAmount;
+
+}
+
+
+// ========================================
+// 銘柄マスタ取得
+// ========================================
+
+function getStockMaster(stock) {
+
+    if (
+        !stock ||
+        typeof stock !== "object"
+    ) {
+
+        return null;
+
+    }
+
+    return (
+        stockDatabase[
+            stock.code
+        ] ||
+        null
+    );
+
+}
+
+
+// ========================================
+// 1銘柄の年間予想配当
+// annualDividendPerShareは年間合計額として扱う
+// ========================================
+
+function calculateStockAnnualDividend(
+    stock
+) {
+
+    const master =
+        getStockMaster(
+            stock
+        );
+
+    if (!master) {
+
+        return 0;
+
+    }
+
+    const dividendPerShare =
+        Number(
+            master
+                .annualDividendPerShare ||
+            0
+        );
+
+    const shares =
+        Number(
+            stock.shares || 0
+        );
+
+    if (
+        !Number.isFinite(
+            dividendPerShare
+        ) ||
+        !Number.isFinite(
+            shares
+        ) ||
+        dividendPerShare < 0 ||
+        shares <= 0
+    ) {
+
+        return 0;
+
+    }
+
+    const amount =
+        dividendPerShare *
+        shares;
+
+    return Math.max(
+        0,
+        convertToYen(
+            amount,
+            master.currency
+        )
+    );
+
+}
+
+
+// ========================================
+// 年間予想配当合計
 // ========================================
 
 function calculateAnnualDividend() {
 
-    let total = 0;
+    const total =
+        portfolio.reduce(
+            (sum, stock) =>
+                sum +
+                calculateStockAnnualDividend(
+                    stock
+                ),
+            0
+        );
 
-    portfolio.forEach((stock) => {
-
-        const master = stockDatabase[stock.code];
-
-        if (!master) return;
-
-        let dividend =
-
-            Number(master.annualDividendPerShare) *
-
-            Number(stock.shares);
-
-        if (master.currency === "USD") {
-
-            dividend *= settings.exchangeRate;
-
-        }
-
-        total += dividend;
-
-    });
-
-    return Math.round(total);
+    return Math.round(
+        total
+    );
 
 }
 
+
 // ========================================
-// Portfolio Value
+// 月平均予想配当
+// ========================================
+
+function calculateMonthlyDividend() {
+
+    return (
+        calculateAnnualDividend() /
+        12
+    );
+
+}
+
+
+// ========================================
+// 1銘柄の評価額
+// ========================================
+
+function calculateStockValue(
+    stock
+) {
+
+    const master =
+        getStockMaster(
+            stock
+        );
+
+    if (!master) {
+
+        return 0;
+
+    }
+
+    const currentPrice =
+        Number(
+            master.currentPrice || 0
+        );
+
+    const shares =
+        Number(
+            stock.shares || 0
+        );
+
+    if (
+        !Number.isFinite(
+            currentPrice
+        ) ||
+        !Number.isFinite(
+            shares
+        ) ||
+        currentPrice < 0 ||
+        shares <= 0
+    ) {
+
+        return 0;
+
+    }
+
+    const value =
+        currentPrice *
+        shares;
+
+    return Math.max(
+        0,
+        convertToYen(
+            value,
+            master.currency
+        )
+    );
+
+}
+
+
+// ========================================
+// ポートフォリオ評価額合計
 // ========================================
 
 function calculatePortfolioValue() {
 
-    let total = 0;
+    const total =
+        portfolio.reduce(
+            (sum, stock) =>
+                sum +
+                calculateStockValue(
+                    stock
+                ),
+            0
+        );
 
-    portfolio.forEach((stock) => {
-
-        const master = stockDatabase[stock.code];
-
-        if (!master) return;
-
-        let value =
-
-            Number(master.currentPrice || 0) *
-
-            Number(stock.shares);
-
-        if (master.currency === "USD") {
-
-            value *= settings.exchangeRate;
-
-        }
-
-        total += value;
-
-    });
-
-    return Math.round(total);
+    return Math.round(
+        total
+    );
 
 }
 
+
 // ========================================
-// Expense
+// 月間生活費合計
 // ========================================
 
 function calculateMonthlyExpense() {
 
-    return Object.values(expenses)
+    return Object.values(
+        expenses
+    )
+        .reduce(
+            (
+                total,
+                value
+            ) => {
 
-        .reduce((a, b) =>
+                const numericValue =
+                    Number(
+                        value || 0
+                    );
 
-            a + Number(b || 0)
+                if (
+                    !Number.isFinite(
+                        numericValue
+                    ) ||
+                    numericValue < 0
+                ) {
 
-        , 0);
+                    return total;
+
+                }
+
+                return (
+                    total +
+                    numericValue
+                );
+
+            },
+            0
+        );
 
 }
 
+
 // ========================================
-// Dashboard
+// 年間生活費合計
+// ========================================
+
+function calculateAnnualExpense() {
+
+    return (
+        calculateMonthlyExpense() *
+        12
+    );
+
+}
+
+
+// ========================================
+// 生活費カバー率
+// ========================================
+
+function calculateFreedomRate() {
+
+    const annualDividend =
+        calculateAnnualDividend();
+
+    const annualExpense =
+        calculateAnnualExpense();
+
+    if (
+        annualExpense <= 0
+    ) {
+
+        return 0;
+
+    }
+
+    return Math.max(
+        0,
+        (
+            annualDividend /
+            annualExpense
+        ) *
+        100
+    );
+
+}
+
+
+// ========================================
+// 生活費100%までに必要な年間配当
+// ========================================
+
+function calculateRemainingDividendGoal() {
+
+    const annualExpense =
+        calculateAnnualExpense();
+
+    const annualDividend =
+        calculateAnnualDividend();
+
+    return Math.max(
+        0,
+        annualExpense -
+        annualDividend
+    );
+
+}
+
+
+// ========================================
+// ダッシュボード文言
+// ========================================
+
+function getFreedomMessage(
+    rate,
+    monthlyExpense
+) {
+
+    if (
+        monthlyExpense <= 0
+    ) {
+
+        return "生活費を登録すると、配当によるカバー率を表示します。";
+
+    }
+
+    if (
+        rate >= 100
+    ) {
+
+        return "年間予想配当が、登録した生活費を上回っています。";
+
+    }
+
+    if (
+        rate >= 75
+    ) {
+
+        return "生活費の大部分を、年間予想配当でカバーしています。";
+
+    }
+
+    if (
+        rate >= 50
+    ) {
+
+        return "生活費の半分以上を、年間予想配当でカバーしています。";
+
+    }
+
+    if (
+        rate >= 25
+    ) {
+
+        return "年間予想配当が、生活費の一部を支えています。";
+
+    }
+
+    return "配当の積み上げに応じて、生活費カバー率が上昇します。";
+
+}
+
+
+// ========================================
+// ダッシュボード表示
 // ========================================
 
 function renderDashboard() {
 
-    const annual = calculateAnnualDividend();
+    const annualDividend =
+        calculateAnnualDividend();
 
-    const monthly = annual / 12;
+    const averageMonthlyDividend =
+        calculateMonthlyDividend();
 
-    const value = calculatePortfolioValue();
+    const totalPortfolioValue =
+        calculatePortfolioValue();
 
-    const annualExpense =
+    const monthlyExpense =
+        calculateMonthlyExpense();
 
-        calculateMonthlyExpense() * 12;
+    const coverageRate =
+        calculateFreedomRate();
 
-    const rate = annualExpense > 0
+    const remainingGoal =
+        calculateRemainingDividendGoal();
 
-        ? (annual / annualExpense) * 100
+    if (
+        totalAnnualDividend
+    ) {
 
-        : 0;
+        totalAnnualDividend
+            .textContent =
+            formatYen(
+                annualDividend
+            );
 
-    totalAnnualDividend.textContent =
+    }
 
-        formatYen(annual);
+    if (
+        monthlyDividend
+    ) {
 
-    monthlyDividend.textContent =
+        monthlyDividend
+            .textContent =
+            formatYen(
+                averageMonthlyDividend
+            );
 
-        formatYen(monthly);
+    }
 
-    portfolioValue.textContent =
+    if (
+        portfolioValue
+    ) {
 
-        formatYen(value);
+        portfolioValue
+            .textContent =
+            formatYen(
+                totalPortfolioValue
+            );
 
-    freedomRate.textContent =
+    }
 
-        rate.toFixed(1);
+    if (
+        freedomRate
+    ) {
 
-    freedomBar.style.width =
+        freedomRate
+            .textContent =
+            coverageRate
+                .toFixed(1);
 
-        `${Math.min(rate,100)}%`;
+    }
+
+    if (
+        freedomBar
+    ) {
+
+        freedomBar.style.width =
+            `${Math.min(
+                coverageRate,
+                100
+            )}%`;
+
+    }
+
+    const freedomMessage =
+        document.getElementById(
+            "freedomMessage"
+        );
+
+    if (
+        freedomMessage
+    ) {
+
+        freedomMessage.textContent =
+            getFreedomMessage(
+                coverageRate,
+                monthlyExpense
+            );
+
+    }
+
+    const nextGoalTitle =
+        document.getElementById(
+            "nextGoalTitle"
+        );
+
+    const nextGoalAmount =
+        document.getElementById(
+            "nextGoalAmount"
+        );
+
+    if (
+        nextGoalTitle
+    ) {
+
+        nextGoalTitle.textContent =
+            monthlyExpense > 0
+                ? "生活費カバー100%"
+                : "生活費を登録してください";
+
+    }
+
+    if (
+        nextGoalAmount
+    ) {
+
+        nextGoalAmount.textContent =
+            monthlyExpense > 0
+                ? (
+                    remainingGoal > 0
+                        ? `あと ¥${formatYen(
+                            remainingGoal
+                        )}`
+                        : "達成済み"
+                )
+                : "―";
+
+    }
+
+    const summaryStockCount =
+        document.getElementById(
+            "summaryStockCount"
+        );
+
+    if (
+        summaryStockCount
+    ) {
+
+        summaryStockCount.textContent =
+            `${portfolio.length}銘柄`;
+
+    }
 
 }
-
-// ========================================
-// Render
-// ========================================
-
-
 // ========================================
 // Dividend Monsters Ver4.1
 // Part 3 / 8
