@@ -7724,14 +7724,14 @@ function saveAndNotifyOnFailure() {
 
 }
 // ========================================
-// Dividend Monsters Ver4.2
+// Dividend Monsters Ver5.0
 // Part 8 / 8
-// Initialize + Navigation
+// Initialize + Navigation + Final Render
 // ========================================
 
 
 // ========================================
-// Part4で使用する進化ダイアログ
+// Part8 DOM
 // ========================================
 
 const levelUpDialog =
@@ -7741,95 +7741,60 @@ const levelUpDialog =
 
 
 // ========================================
-// モンスターデータの初期化
-// ニックネームは一度だけ設定する
+// モンスターデータ初期化
 // ========================================
 
 function initializeMonster() {
 
     monster =
-        monster &&
-        typeof monster === "object"
-            ? monster
-            : {};
-
-    monster.level =
-        Math.max(
-            1,
-            Number(
-                monster.level ||
-                1
-            )
+        normalizeMonsterData(
+            monster
         );
 
-    monster.exp =
-        Math.max(
-            0,
-            Number(
-                monster.exp ||
-                0
-            )
-        );
-
-    monster.stage =
-        Math.max(
-            1,
-            Number(
-                monster.stage ||
-                1
-            )
-        );
+    updateMonsterStage();
 
     if (
-        typeof monster.name !==
-        "string"
-    ) {
-
-        monster.name =
-            "";
-
-    }
-
-    /*
-     * 初回だけニックネームを確認する。
-     * 「タマゴン」のまま確定した場合も、
-     * 次回以降は再表示しない。
-     */
-    if (
-        monster.nameInitialized !==
+        monster.nameInitialized ===
         true
     ) {
 
-        const input =
-            window.prompt(
-                "相棒の名前を決めましょう！",
-                monster.name ||
-                "タマゴン"
-            );
-
-        if (
-            input &&
-            input.trim()
-        ) {
-
-            monster.name =
-                input.trim();
-
-        } else if (
-            !monster.name
-        ) {
-
-            monster.name =
-                "タマゴン";
-
-        }
-
-        monster.nameInitialized =
-            true;
-
-        saveData();
+        return;
 
     }
+
+    const input =
+        window.prompt(
+            "相棒の名前を入力してください。",
+            monster.name ||
+            DEFAULT_MONSTER.name
+        );
+
+    if (
+        typeof input ===
+            "string" &&
+        input.trim()
+    ) {
+
+        monster.name =
+            input
+                .trim()
+                .slice(
+                    0,
+                    20
+                );
+
+    } else {
+
+        monster.name =
+            monster.name ||
+            DEFAULT_MONSTER.name;
+
+    }
+
+    monster.nameInitialized =
+        true;
+
+    saveData();
 
 }
 
@@ -7841,11 +7806,17 @@ function initializeMonster() {
 function calculateReceivedDividendTotal() {
 
     return dividendHistory.reduce(
-        (total, record) =>
+        (
+            total,
+            record
+        ) =>
             total +
-            Number(
-                record.amount ||
-                0
+            Math.max(
+                0,
+                Number(
+                    record.amount ||
+                    0
+                )
             ),
         0
     );
@@ -7854,7 +7825,7 @@ function calculateReceivedDividendTotal() {
 
 
 // ========================================
-// 累計受取配当の表示
+// 累計受取配当表示
 // ========================================
 
 function renderReceivedDividendTotal() {
@@ -7884,21 +7855,16 @@ function renderReceivedDividendTotal() {
 
 function initializeBottomNavigation() {
 
-    const navButtons =
+    const buttons =
         document.querySelectorAll(
             ".nav-button"
         );
 
-    navButtons.forEach(
+    buttons.forEach(
         button => {
 
-            /*
-             * 初期化が複数回呼ばれても、
-             * イベントを重複登録しない。
-             */
             if (
-                button.dataset
-                    .navigationInitialized ===
+                button.dataset.initialized ===
                 "true"
             ) {
 
@@ -7906,8 +7872,7 @@ function initializeBottomNavigation() {
 
             }
 
-            button.dataset
-                .navigationInitialized =
+            button.dataset.initialized =
                 "true";
 
             button.addEventListener(
@@ -7921,7 +7886,9 @@ function initializeBottomNavigation() {
                     let target =
                         null;
 
-                    switch (targetId) {
+                    switch (
+                        targetId
+                    ) {
 
                         case "top":
 
@@ -7967,38 +7934,36 @@ function initializeBottomNavigation() {
                                     targetId
                                 );
 
-                            break;
+                    }
+
+                    if (
+                        target
+                    ) {
+
+                        target.scrollIntoView(
+                            {
+                                behavior:
+                                    "smooth",
+                                block:
+                                    "start"
+                            }
+                        );
 
                     }
 
-                    if (target) {
+                    buttons.forEach(
+                        nav => {
 
-                        target.scrollIntoView({
-                            behavior:
-                                "smooth",
-                            block:
-                                "start"
-                        });
-
-                    }
-
-                    navButtons.forEach(
-                        navButton => {
-
-                            navButton
-                                .classList
-                                .remove(
-                                    "active"
-                                );
+                            nav.classList.remove(
+                                "active"
+                            );
 
                         }
                     );
 
-                    button
-                        .classList
-                        .add(
-                            "active"
-                        );
+                    button.classList.add(
+                        "active"
+                    );
 
                 }
             );
@@ -8010,7 +7975,7 @@ function initializeBottomNavigation() {
 
 
 // ========================================
-// ダイアログを閉じるボタン
+// ダイアログ閉じる
 // ========================================
 
 function initializeDialogCloseButtons() {
@@ -8023,8 +7988,7 @@ function initializeDialogCloseButtons() {
             button => {
 
                 if (
-                    button.dataset
-                        .closeInitialized ===
+                    button.dataset.initialized ===
                     "true"
                 ) {
 
@@ -8032,33 +7996,21 @@ function initializeDialogCloseButtons() {
 
                 }
 
-                button.dataset
-                    .closeInitialized =
+                button.dataset.initialized =
                     "true";
 
                 button.addEventListener(
                     "click",
                     () => {
 
-                        const dialogId =
-                            button.dataset
-                                .closeDialog;
-
                         const dialog =
-                            document
-                                .getElementById(
-                                    dialogId
-                                );
+                            document.getElementById(
+                                button.dataset.closeDialog
+                            );
 
-                        if (
-                            dialog &&
-                            typeof dialog.close ===
-                            "function"
-                        ) {
-
-                            dialog.close();
-
-                        }
+                        closeDialogSafely(
+                            dialog
+                        );
 
                     }
                 );
@@ -8073,33 +8025,23 @@ function initializeDialogCloseButtons() {
 
     if (
         closeLevelUpButton &&
-        closeLevelUpButton.dataset
-            .closeInitialized !==
-        "true"
+        closeLevelUpButton.dataset.initialized !==
+            "true"
     ) {
 
-        closeLevelUpButton.dataset
-            .closeInitialized =
+        closeLevelUpButton.dataset.initialized =
             "true";
 
-        closeLevelUpButton
-            .addEventListener(
-                "click",
-                () => {
+        closeLevelUpButton.addEventListener(
+            "click",
+            () => {
 
-                    if (
-                        levelUpDialog &&
-                        typeof levelUpDialog
-                            .close ===
-                        "function"
-                    ) {
+                closeDialogSafely(
+                    levelUpDialog
+                );
 
-                        levelUpDialog.close();
-
-                    }
-
-                }
-            );
+            }
+        );
 
     }
 
@@ -8107,8 +8049,107 @@ function initializeDialogCloseButtons() {
 
 
 // ========================================
-// 将来の価格更新
-// 現在はstocks.jsonの固定価格を使用
+// Dialog背景クリック
+// ========================================
+
+function initializeDialogBackdropClose() {
+
+    document
+        .querySelectorAll(
+            "dialog"
+        )
+        .forEach(
+            dialog => {
+
+                if (
+                    dialog.dataset.initialized ===
+                    "true"
+                ) {
+
+                    return;
+
+                }
+
+                dialog.dataset.initialized =
+                    "true";
+
+                dialog.addEventListener(
+                    "click",
+                    event => {
+
+                        if (
+                            event.target ===
+                            dialog
+                        ) {
+
+                            closeDialogSafely(
+                                dialog
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+}
+
+
+// ========================================
+// Escapeキー
+// ========================================
+
+function initializeKeyboardControls() {
+
+    if (
+        document.body.dataset.keyboardInitialized ===
+        "true"
+    ) {
+
+        return;
+
+    }
+
+    document.body.dataset.keyboardInitialized =
+        "true";
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key !==
+                "Escape"
+            ) {
+
+                return;
+
+            }
+
+            document
+                .querySelectorAll(
+                    "dialog[open]"
+                )
+                .forEach(
+                    dialog => {
+
+                        closeDialogSafely(
+                            dialog
+                        );
+
+                    }
+                );
+
+        }
+    );
+
+}
+
+
+// ========================================
+// 将来API用
 // ========================================
 
 async function refreshPrices() {
@@ -8116,12 +8157,6 @@ async function refreshPrices() {
     return;
 
 }
-
-
-// ========================================
-// 将来の配当データ更新
-// 現在はstocks.jsonの固定データを使用
-// ========================================
 
 async function refreshDividendDatabase() {
 
@@ -8131,7 +8166,7 @@ async function refreshDividendDatabase() {
 
 
 // ========================================
-// 毎日起動時の更新
+// 毎日起動
 // ========================================
 
 async function dailyBoot() {
@@ -8170,13 +8205,35 @@ function render() {
     renderCalendar();
 
     renderAnalytics();
-renderAchievements();    
+
+    renderAchievements();
+
+    renderExpenses();
 
 }
 
 
 // ========================================
-// アプリ初期化
+// 初期化
+// ========================================
+
+function initializeControls() {
+
+    initializeBottomNavigation();
+
+    initializeDialogCloseButtons();
+
+    initializeDialogBackdropClose();
+
+    initializeKeyboardControls();
+
+    initializePortfolioControls();
+
+}
+
+
+// ========================================
+// App初期化
 // ========================================
 
 async function initializeApp() {
@@ -8187,11 +8244,11 @@ async function initializeApp() {
 
         await loadStockDatabase();
 
-initializePortfolioControls();
-
-migratePortfolio();
+        migratePortfolio();
 
         initializeMonster();
+
+        initializeControls();
 
         await dailyBoot();
 
@@ -8200,18 +8257,17 @@ migratePortfolio();
         showHarvestNotification();
 
         console.log(
-            "Dividend Monsters Ver4.2 Started"
+            `Dividend Monsters Ver${APP_VERSION} Started`
         );
 
     } catch (error) {
 
         console.error(
-            "Dividend Monstersの起動に失敗しました。",
             error
         );
 
         showToast(
-            "アプリの読み込み中にエラーが発生しました。"
+            "アプリの起動に失敗しました。"
         );
 
     }
@@ -8220,8 +8276,7 @@ migratePortfolio();
 
 
 // ========================================
-// デバッグ用
-// 常に最新データを取得できるようgetterを使用
+// Debug
 // ========================================
 
 window.dm = {
@@ -8276,6 +8331,8 @@ window.dm = {
 
     render,
 
+    saveData,
+
     generateUpcomingDividends
 
 };
@@ -8288,10 +8345,6 @@ window.dm = {
 document.addEventListener(
     "DOMContentLoaded",
     () => {
-
-        initializeBottomNavigation();
-
-        initializeDialogCloseButtons();
 
         initializeApp();
 
