@@ -3386,307 +3386,765 @@ function renderMonsterBook() {
 }
 
 // ========================================
-// Dividend Monsters Ver4.0
+// Dividend Monsters Ver5.0
 // Part 5 / 8
-// Analytics + Calendar
+// Calendar + Analytics + Achievements
 // ========================================
 
+
 // ========================================
-// セクター集計
+// Part5用HTMLエスケープ
 // ========================================
 
-function calculateSectorData(){
+function escapeAnalyticsHtml(value) {
 
-    const sectors={};
+    return String(
+        value ?? ""
+    )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-    portfolio.forEach(stock=>{
+}
 
-        const master=stockDatabase[stock.code];
 
-        if(!master)return;
+// ========================================
+// セクター別年間予想配当
+// annualDividendPerShareは年間額なので
+// 月次銘柄も12倍しない
+// ========================================
 
-        let value=
+function calculateSectorData() {
 
-            Number(master.annualDividendPerShare)*
-            Number(stock.shares);
+    const sectors = {};
 
-        if(master.distributionType==="monthly"){
+    portfolio.forEach(
+        stock => {
 
-            value*=12;
+            const master =
+                getStockMaster(
+                    stock
+                );
+
+            if (!master) {
+
+                return;
+
+            }
+
+            const sector =
+                String(
+                    master.sector ||
+                    "その他"
+                );
+
+            const annualDividend =
+                calculateStockAnnualDividend(
+                    stock
+                );
+
+            sectors[sector] =
+                (
+                    sectors[sector] ||
+                    0
+                ) +
+                annualDividend;
 
         }
-
-        if(master.currency==="USD"){
-
-            value*=settings.exchangeRate;
-
-        }
-
-        const sector=
-
-            master.sector||"その他";
-
-        sectors[sector]=(sectors[sector]||0)+value;
-
-    });
+    );
 
     return sectors;
 
 }
 
+
 // ========================================
-// 円グラフデータ
+// セクター配当比率データ
 // ========================================
 
-function getPieChartData(){
+function getPieChartData() {
 
-    const sectors=
-
-        calculateSectorData();
-
-    return Object.entries(sectors)
-
-        .map(([name,value])=>({
-
-            name,
-
-            value:Math.round(value)
-
-        }));
+    return Object.entries(
+        calculateSectorData()
+    )
+        .map(
+            ([name, value]) => ({
+                name,
+                value:
+                    Math.max(
+                        0,
+                        Math.round(
+                            Number(
+                                value || 0
+                            )
+                        )
+                    )
+            })
+        )
+        .filter(
+            item =>
+                item.value > 0
+        )
+        .sort(
+            (a, b) =>
+                b.value -
+                a.value
+        );
 
 }
 
+
 // ========================================
-// ツリーマップデータ
+// 銘柄別資産比率データ
 // ========================================
 
-function getTreeMapData(){
+function getTreeMapData() {
 
-    return portfolio.map(stock=>{
+    return portfolio
+        .map(
+            stock => {
 
-        const master=
+                const master =
+                    getStockMaster(
+                        stock
+                    );
 
-            stockDatabase[stock.code];
+                if (!master) {
 
-        if(!master)return null;
+                    return null;
 
-        let value=
+                }
 
-            Number(master.annualDividendPerShare)*
-            Number(stock.shares);
+                return {
+                    code:
+                        stock.code,
 
-        if(master.distributionType==="monthly"){
+                    name:
+                        String(
+                            master.name ||
+                            stock.code
+                        ),
 
-            value*=12;
+                    value:
+                        Math.max(
+                            0,
+                            Math.round(
+                                calculateStockValue(
+                                    stock
+                                )
+                            )
+                        )
+                };
+
+            }
+        )
+        .filter(
+            item =>
+                item &&
+                item.value > 0
+        )
+        .sort(
+            (a, b) =>
+                b.value -
+                a.value
+        );
+
+}
+
+
+// ========================================
+// 指定年の月別受取配当
+// ========================================
+
+function getMonthlyDividendData(
+    targetYear =
+        new Date()
+            .getFullYear()
+) {
+
+    const monthly =
+        Array(12)
+            .fill(0);
+
+    dividendHistory.forEach(
+        record => {
+
+            const date =
+                parseScheduleDate(
+                    record.date
+                );
+
+            if (
+                !date ||
+                date.getFullYear() !==
+                targetYear
+            ) {
+
+                return;
+
+            }
+
+            const monthIndex =
+                date.getMonth();
+
+            monthly[monthIndex] +=
+                Math.max(
+                    0,
+                    Number(
+                        record.amount || 0
+                    )
+                );
 
         }
+    );
 
-        if(master.currency==="USD"){
+    return monthly.map(
+        (
+            value,
+            index
+        ) => ({
+            month:
+                index + 1,
 
-            value*=settings.exchangeRate;
+            value:
+                Math.round(
+                    value
+                )
+        })
+    );
+
+}
+
+
+// ========================================
+// 当年の月別予想配当
+// 翌年分を同じ月へ合算しない
+// ========================================
+
+function getCalendarDividendData(
+    targetYear =
+        new Date()
+            .getFullYear()
+) {
+
+    const monthly =
+        Array(12)
+            .fill(0);
+
+    upcomingDividends.forEach(
+        item => {
+
+            const date =
+                parseScheduleDate(
+                    item.paymentDate
+                );
+
+            if (
+                !date ||
+                date.getFullYear() !==
+                targetYear
+            ) {
+
+                return;
+
+            }
+
+            monthly[
+                date.getMonth()
+            ] +=
+                Math.max(
+                    0,
+                    Number(
+                        item.amount || 0
+                    )
+                );
 
         }
-
-        return{
-
-            name:master.name,
-
-            value:Math.round(value)
-
-        };
-
-    }).filter(Boolean);
-
-}
-
-// ========================================
-// 年間推移
-// ========================================
-
-function getMonthlyDividendData(){
-
-    const monthly=
-
-        Array(12).fill(0);
-
-    harvestedDividends.forEach(item=>{
-
-        const month=
-
-            new Date(item.paymentDate)
-
-            .getMonth();
-
-        monthly[month]+=
-
-            Number(item.amount);
-
-    });
-
-    return monthly.map((value,index)=>({
-
-        month:index+1,
-
-        value:Math.round(value)
-
-    }));
-
-}
-
-// ========================================
-// カレンダー
-// ========================================
-
-function renderCalendar(){
-
-    if(!dividendCalendar)return;
-
-    const months=
-
-        Array(12).fill(0);
-
-    upcomingDividends.forEach(item=>{
-
-        const month=
-
-            new Date(item.paymentDate)
-
-            .getMonth();
-
-        months[month]+=
-
-            Number(item.amount);
-
-    });
-
-    dividendCalendar.innerHTML=
-
-        months.map((amount,index)=>`
-
-        <article class="month-item">
-
-            <span>${index+1}月</span>
-
-            <strong>
-
-                ¥${formatYen(amount)}
-
-            </strong>
-
-        </article>
-
-        `).join("");
-
-}
-
-// ========================================
-// 分析画面描画
-// ========================================
-
-function renderAnalytics(){
-
-    console.table(
-
-        getPieChartData()
-
     );
 
-    console.table(
-
-        getTreeMapData()
-
-    );
-
-    console.table(
-
-        getMonthlyDividendData()
-
-    );
+    return monthly;
 
 }
+
+
 // ========================================
-// 実績システム
+// 配当カレンダー表示
+// ========================================
+
+function renderCalendar() {
+
+    if (!dividendCalendar) {
+
+        return;
+
+    }
+
+    const currentYear =
+        new Date()
+            .getFullYear();
+
+    const monthly =
+        getCalendarDividendData(
+            currentYear
+        );
+
+    const calendarYear =
+        document.getElementById(
+            "calendarYear"
+        );
+
+    if (calendarYear) {
+
+        calendarYear.textContent =
+            `${currentYear}年`;
+
+    }
+
+    dividendCalendar.innerHTML =
+        monthly
+            .map(
+                (
+                    amount,
+                    index
+                ) => `
+                    <article class="month-item">
+
+                        <span>
+                            ${index + 1}月
+                        </span>
+
+                        <strong>
+                            ¥${formatYen(
+                                amount
+                            )}
+                        </strong>
+
+                        <small>
+                            予想
+                        </small>
+
+                    </article>
+                `
+            )
+            .join("");
+
+}
+
+
+// ========================================
+// 比率バー共通表示
+// ========================================
+
+function createAnalyticsRows(
+    items,
+    emptyMessage
+) {
+
+    if (
+        !Array.isArray(items) ||
+        items.length === 0
+    ) {
+
+        return `
+            <div class="chart-placeholder">
+                ${escapeAnalyticsHtml(
+                    emptyMessage
+                )}
+            </div>
+        `;
+
+    }
+
+    const total =
+        items.reduce(
+            (
+                sum,
+                item
+            ) =>
+                sum +
+                Math.max(
+                    0,
+                    Number(
+                        item.value || 0
+                    )
+                ),
+            0
+        );
+
+    if (total <= 0) {
+
+        return `
+            <div class="chart-placeholder">
+                ${escapeAnalyticsHtml(
+                    emptyMessage
+                )}
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="analytics-bar-list">
+
+            ${items
+                .map(
+                    item => {
+
+                        const ratio =
+                            (
+                                Number(
+                                    item.value || 0
+                                ) /
+                                total
+                            ) *
+                            100;
+
+                        return `
+                            <div class="analytics-bar-item">
+
+                                <div class="analytics-bar-heading">
+
+                                    <span>
+                                        ${escapeAnalyticsHtml(
+                                            item.name
+                                        )}
+                                    </span>
+
+                                    <strong>
+                                        ${ratio.toFixed(1)}%
+                                    </strong>
+
+                                </div>
+
+                                <div class="analytics-bar-track">
+
+                                    <div
+                                        class="analytics-bar-fill"
+                                        style="width:${Math.min(
+                                            ratio,
+                                            100
+                                        )}%"
+                                    ></div>
+
+                                </div>
+
+                                <small>
+                                    ¥${formatYen(
+                                        item.value
+                                    )}
+                                </small>
+
+                            </div>
+                        `;
+
+                    }
+                )
+                .join("")}
+
+        </div>
+    `;
+
+}
+
+
+// ========================================
+// 月別受取額表示
+// ========================================
+
+function createMonthlyDividendRows(
+    monthlyData
+) {
+
+    const highest =
+        Math.max(
+            0,
+            ...monthlyData.map(
+                item =>
+                    Number(
+                        item.value || 0
+                    )
+            )
+        );
+
+    if (highest <= 0) {
+
+        return `
+            <div class="chart-placeholder">
+                配当を収穫すると表示されます
+            </div>
+        `;
+
+    }
+
+    return `
+        <div class="monthly-bar-list">
+
+            ${monthlyData
+                .map(
+                    item => {
+
+                        const width =
+                            highest > 0
+                                ? (
+                                    item.value /
+                                    highest
+                                ) *
+                                100
+                                : 0;
+
+                        return `
+                            <div class="monthly-bar-item">
+
+                                <span>
+                                    ${item.month}月
+                                </span>
+
+                                <div class="monthly-bar-track">
+
+                                    <div
+                                        class="monthly-bar-fill"
+                                        style="width:${Math.min(
+                                            width,
+                                            100
+                                        )}%"
+                                    ></div>
+
+                                </div>
+
+                                <strong>
+                                    ¥${formatYen(
+                                        item.value
+                                    )}
+                                </strong>
+
+                            </div>
+                        `;
+
+                    }
+                )
+                .join("")}
+
+        </div>
+    `;
+
+}
+
+
+// ========================================
+// 分析表示
+// ========================================
+
+function renderAnalytics() {
+
+    const sectorChart =
+        document.getElementById(
+            "sectorChart"
+        );
+
+    const treeMapChart =
+        document.getElementById(
+            "treeMapChart"
+        );
+
+    const monthlyDividendChart =
+        document.getElementById(
+            "monthlyDividendChart"
+        );
+
+    if (sectorChart) {
+
+        sectorChart.innerHTML =
+            createAnalyticsRows(
+                getPieChartData(),
+                "銘柄を登録すると表示されます"
+            );
+
+    }
+
+    if (treeMapChart) {
+
+        treeMapChart.innerHTML =
+            createAnalyticsRows(
+                getTreeMapData(),
+                "評価額のある銘柄を登録すると表示されます"
+            );
+
+    }
+
+    if (monthlyDividendChart) {
+
+        monthlyDividendChart.innerHTML =
+            createMonthlyDividendRows(
+                getMonthlyDividendData()
+            );
+
+    }
+
+}
+
+
+// ========================================
+// 実績条件
+// 名称は達成条件が分かる表現に統一
 // ========================================
 
 const ACHIEVEMENT_RULES = [
     {
-        icon: "🌱",
-        title: "はじめての収穫",
-        description: "初めて配当を収穫する",
-        check: data =>
-            data.harvestCount >= 1,
-        progress: data =>
-            `${Math.min(data.harvestCount, 1)} / 1回`
+        icon: "✓",
+        title: "初回収穫",
+        description:
+            "初めて予定配当を収穫する",
+
+        check:
+            data =>
+                data.harvestCount >=
+                1,
+
+        progress:
+            data =>
+                `${Math.min(
+                    data.harvestCount,
+                    1
+                )} / 1回`
     },
+
     {
-        icon: "🧺",
-        title: "収穫の習慣",
-        description: "配当を10回収穫する",
-        check: data =>
-            data.harvestCount >= 10,
-        progress: data =>
-            `${Math.min(data.harvestCount, 10)} / 10回`
+        icon: "10",
+        title: "収穫10回",
+        description:
+            "予定配当を10回収穫する",
+
+        check:
+            data =>
+                data.harvestCount >=
+                10,
+
+        progress:
+            data =>
+                `${Math.min(
+                    data.harvestCount,
+                    10
+                )} / 10回`
     },
+
     {
-        icon: "🌳",
-        title: "熟練の収穫者",
-        description: "配当を50回収穫する",
-        check: data =>
-            data.harvestCount >= 50,
-        progress: data =>
-            `${Math.min(data.harvestCount, 50)} / 50回`
+        icon: "50",
+        title: "収穫50回",
+        description:
+            "予定配当を50回収穫する",
+
+        check:
+            data =>
+                data.harvestCount >=
+                50,
+
+        progress:
+            data =>
+                `${Math.min(
+                    data.harvestCount,
+                    50
+                )} / 50回`
     },
+
     {
-        icon: "💰",
-        title: "配当の芽吹き",
-        description: "累計受取配当10万円を達成する",
-        check: data =>
-            data.receivedTotal >= 100000,
-        progress: data =>
-            `¥${formatYen(
-                Math.min(data.receivedTotal, 100000)
-            )} / ¥100,000`
+        icon: "¥",
+        title: "累計受取10万円",
+        description:
+            "累計受取配当10万円を達成する",
+
+        check:
+            data =>
+                data.receivedTotal >=
+                100000,
+
+        progress:
+            data =>
+                `¥${formatYen(
+                    Math.min(
+                        data.receivedTotal,
+                        100000
+                    )
+                )} / ¥100,000`
     },
+
     {
-        icon: "🏆",
+        icon: "年",
         title: "年間配当50万円",
-        description: "年間予想配当50万円を達成する",
-        check: data =>
-            data.annualDividend >= 500000,
-        progress: data =>
-            `¥${formatYen(
-                Math.min(data.annualDividend, 500000)
-            )} / ¥500,000`
+        description:
+            "年間予想配当50万円を達成する",
+
+        check:
+            data =>
+                data.annualDividend >=
+                500000,
+
+        progress:
+            data =>
+                `¥${formatYen(
+                    Math.min(
+                        data.annualDividend,
+                        500000
+                    )
+                )} / ¥500,000`
     },
+
     {
-        icon: "🐉",
-        title: "成竜への進化",
-        description: "モンスターレベル30に到達する",
-        check: data =>
-            data.level >= 30,
-        progress: data =>
-            `Lv.${Math.min(data.level, 30)} / Lv.30`
+        icon: "30",
+        title: "レベル30到達",
+        description:
+            "モンスターがレベル30に到達する",
+
+        check:
+            data =>
+                data.level >=
+                30,
+
+        progress:
+            data =>
+                `Lv.${Math.min(
+                    data.level,
+                    30
+                )} / Lv.30`
     },
+
     {
-        icon: "👑",
-        title: "伝説への道",
-        description: "モンスターレベル75に到達する",
-        check: data =>
-            data.level >= 75,
-        progress: data =>
-            `Lv.${Math.min(data.level, 75)} / Lv.75`
+        icon: "75",
+        title: "レベル75到達",
+        description:
+            "モンスターがレベル75に到達する",
+
+        check:
+            data =>
+                data.level >=
+                75,
+
+        progress:
+            data =>
+                `Lv.${Math.min(
+                    data.level,
+                    75
+                )} / Lv.75`
     },
+
     {
-        icon: "🌟",
-        title: "配当で生活する者",
-        description: "生活防衛率100%を達成する",
-        check: data =>
-            data.freedomRate >= 100,
-        progress: data =>
-            `${Math.min(
-                data.freedomRate,
-                100
-            ).toFixed(1)}% / 100%`
+        icon: "%",
+        title: "生活費カバー100%",
+        description:
+            "年間予想配当で年間生活費をカバーする",
+
+        check:
+            data =>
+                data.freedomRate >=
+                100,
+
+        progress:
+            data =>
+                `${Math.min(
+                    data.freedomRate,
+                    100
+                ).toFixed(1)}% / 100%`
     }
 ];
 
@@ -3697,46 +4155,58 @@ const ACHIEVEMENT_RULES = [
 
 function getAchievementData() {
 
-    const annualDividend =
-        calculateAnnualDividend();
-
-    const monthlyExpense =
-        calculateMonthlyExpense();
-
-    const annualExpense =
-        monthlyExpense * 12;
-
-    const freedomRate =
-        annualExpense > 0
-            ? (
-                annualDividend /
-                annualExpense
-            ) * 100
-            : 0;
+    /*
+     * 手動入力した履歴は収穫回数に含めず、
+     * 予定配当の収穫だけを数える。
+     */
+    const harvestCount =
+        dividendHistory.filter(
+            record =>
+                record.source ===
+                    "scheduled-harvest" ||
+                record.memo ===
+                    "自動収穫" ||
+                record.memo ===
+                    "まとめて収穫" ||
+                record.memo ===
+                    "予定配当を収穫" ||
+                record.memo ===
+                    "予定配当をまとめて収穫"
+        ).length;
 
     const receivedTotal =
         dividendHistory.reduce(
-            (total, record) =>
+            (
+                total,
+                record
+            ) =>
                 total +
-                Number(
-                    record.amount || 0
+                Math.max(
+                    0,
+                    Number(
+                        record.amount || 0
+                    )
                 ),
             0
         );
 
     return {
-        harvestCount:
-            dividendHistory.length,
+        harvestCount,
 
         receivedTotal,
 
-        annualDividend,
+        annualDividend:
+            calculateAnnualDividend(),
 
-        freedomRate,
+        freedomRate:
+            calculateFreedomRate(),
 
         level:
-            Number(
-                monster.level || 1
+            Math.max(
+                1,
+                Number(
+                    monster.level || 1
+                )
             )
     };
 
@@ -3768,63 +4238,83 @@ function renderAchievements() {
     const data =
         getAchievementData();
 
-    let unlockedCount = 0;
+    let unlockedCount =
+        0;
 
     achievementList.innerHTML =
-        ACHIEVEMENT_RULES.map(
-            achievement => {
+        ACHIEVEMENT_RULES
+            .map(
+                achievement => {
 
-                const unlocked =
-                    achievement.check(data);
+                    const unlocked =
+                        achievement.check(
+                            data
+                        );
 
-                if (unlocked) {
+                    if (unlocked) {
 
-                    unlockedCount += 1;
+                        unlockedCount +=
+                            1;
 
-                }
+                    }
 
-                return `
-                    <article
-                        class="achievement-card ${
-                            unlocked
-                                ? "unlocked"
-                                : "locked"
-                        }"
-                    >
-                        <span class="achievement-icon">
-                            ${achievement.icon}
-                        </span>
+                    return `
+                        <article
+                            class="achievement-card ${
+                                unlocked
+                                    ? "unlocked"
+                                    : "locked"
+                            }"
+                        >
 
-                        <div class="achievement-content">
-                            <h3>
-                                ${achievement.title}
-                            </h3>
+                            <span class="achievement-icon">
+                                ${escapeAnalyticsHtml(
+                                    achievement.icon
+                                )}
+                            </span>
 
-                            <p>
-                                ${achievement.description}
-                            </p>
+                            <div class="achievement-content">
 
-                            <small class="achievement-progress">
+                                <h3>
+                                    ${escapeAnalyticsHtml(
+                                        achievement.title
+                                    )}
+                                </h3>
+
+                                <p>
+                                    ${escapeAnalyticsHtml(
+                                        achievement.description
+                                    )}
+                                </p>
+
+                                <small class="achievement-progress">
+                                    ${
+                                        unlocked
+                                            ? "達成済み"
+                                            : escapeAnalyticsHtml(
+                                                achievement.progress(
+                                                    data
+                                                )
+                                            )
+                                    }
+                                </small>
+
+                            </div>
+
+                            <span class="achievement-status">
                                 ${
                                     unlocked
-                                        ? "達成済み"
-                                        : achievement.progress(data)
+                                        ? "✓"
+                                        : "—"
                                 }
-                            </small>
-                        </div>
+                            </span>
 
-                        <span class="achievement-status">
-                            ${
-                                unlocked
-                                    ? "✓"
-                                    : "🔒"
-                            }
-                        </span>
-                    </article>
-                `;
+                        </article>
+                    `;
 
-            }
-        ).join("");
+                }
+            )
+            .join("");
 
     if (achievementCount) {
 
