@@ -1378,18 +1378,29 @@ function renderDashboard() {
 
 }
 // ========================================
-// Dividend Monsters Ver4.1
+// Dividend Monsters Ver5.0
 // Part 3 / 8
-// Harvest System
+// Dividend Schedule + Harvest
 // ========================================
 
 
 // ========================================
-// 配当予定用の日付文字列
+// 日付をYYYY-MM-DD形式へ変換
 // タイムゾーンによる日付ずれを防止
 // ========================================
 
 function getScheduleDateString(date) {
+
+    if (
+        !(date instanceof Date) ||
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+
+    }
 
     const year =
         date.getFullYear();
@@ -1416,8 +1427,7 @@ function getScheduleDateString(date) {
 
 
 // ========================================
-// 配当予定用の日付解析
-// Safariでも日付がずれないようにする
+// YYYY-MM-DD形式の日付を解析
 // ========================================
 
 function parseScheduleDate(dateString) {
@@ -1435,18 +1445,51 @@ function parseScheduleDate(dateString) {
 
     }
 
-    return new Date(
-        Number(match[1]),
-        Number(match[2]) - 1,
-        Number(match[3])
+    const date =
+        new Date(
+            Number(match[1]),
+            Number(match[2]) - 1,
+            Number(match[3])
+        );
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return null;
+
+    }
+
+    return date;
+
+}
+
+
+// ========================================
+// 本日の日付
+// ========================================
+
+function getTodayStart() {
+
+    const today =
+        new Date();
+
+    today.setHours(
+        0,
+        0,
+        0,
+        0
     );
+
+    return today;
 
 }
 
 
 // ========================================
 // 配当予定の識別キー
-// 同じ銘柄・同じ支払日の重複を防ぐ
 // ========================================
 
 function createDividendScheduleKey(
@@ -1454,14 +1497,18 @@ function createDividendScheduleKey(
     paymentDate
 ) {
 
-    return `${code}_${paymentDate}`;
+    return (
+        `${String(code || "")
+            .trim()
+            .toUpperCase()}_` +
+        String(paymentDate || "")
+    );
 
 }
 
 
 // ========================================
 // 配当予定ID
-// crypto.randomUUIDに依存しない
 // ========================================
 
 function createDividendScheduleId(
@@ -1478,7 +1525,7 @@ function createDividendScheduleId(
 
 
 // ========================================
-// 支払時期から予想支払日を決定
+// 予想支払日の設定
 // ========================================
 
 function getPaymentDay(timing) {
@@ -1505,8 +1552,8 @@ function getPaymentDay(timing) {
 
 
 // ========================================
-// 1回分の予想配当額を計算
-// annualDividendPerShareは年間配当単価
+// 1回分の予想配当額
+// 年間配当を支払回数で均等分割
 // ========================================
 
 function calculateScheduledDividendAmount(
@@ -1514,82 +1561,100 @@ function calculateScheduledDividendAmount(
     master
 ) {
 
-    const annualDividendPerShare =
-        Number(
-            master
-                .annualDividendPerShare ||
-            0
-        );
-
-    const shares =
-        Number(
-            stock.shares ||
-            0
-        );
-
-    const paymentCount =
-        Array.isArray(
-            master.paymentMonths
-        ) &&
-        master.paymentMonths.length > 0
-            ? master.paymentMonths.length
-            : 1;
-
-    let amount =
-        (
-            annualDividendPerShare *
-            shares
-        ) /
-        paymentCount;
-
     if (
-        master.currency === "USD"
+        !stock ||
+        !master
     ) {
 
-        amount *=
-            Number(
-                settings.exchangeRate ||
-                150
-            );
+        return 0;
 
     }
 
+    const annualAmount =
+        calculateStockAnnualDividend(
+            stock
+        );
+
+    const paymentMonths =
+        Array.isArray(
+            master.paymentMonths
+        )
+            ? master.paymentMonths
+                .filter(
+                    month => {
+
+                        const value =
+                            Number(month);
+
+                        return (
+                            value >= 1 &&
+                            value <= 12
+                        );
+
+                    }
+                )
+            : [];
+
+    const paymentCount =
+        paymentMonths.length > 0
+            ? paymentMonths.length
+            : 1;
+
     return Math.max(
         0,
-        Math.round(amount)
+        Math.round(
+            annualAmount /
+            paymentCount
+        )
     );
 
 }
 
 
 // ========================================
-// 収穫済みキー一覧を作成
+// 収穫済み配当のキー一覧
 // ========================================
 
 function getHarvestedDividendKeySet() {
 
-    const harvestedKeys =
-        harvestedDividends.map(
-            item =>
-                createDividendScheduleKey(
-                    item.code,
-                    item.paymentDate
-                )
-        );
+    const keys =
+        new Set();
 
-    dividendHistory.forEach(
-        record => {
+    harvestedDividends.forEach(
+        item => {
 
             if (
-                !record.stockCode ||
-                !record.date
+                !item?.code ||
+                !item?.paymentDate
             ) {
 
                 return;
 
             }
 
-            harvestedKeys.push(
+            keys.add(
+                createDividendScheduleKey(
+                    item.code,
+                    item.paymentDate
+                )
+            );
+
+        }
+    );
+
+    dividendHistory.forEach(
+        record => {
+
+            if (
+                !record?.stockCode ||
+                !record?.date
+            ) {
+
+                return;
+
+            }
+
+            keys.add(
                 createDividendScheduleKey(
                     record.stockCode,
                     record.date
@@ -1599,50 +1664,42 @@ function getHarvestedDividendKeySet() {
         }
     );
 
-    return new Set(
-        harvestedKeys
-    );
+    return keys;
 
 }
 
 
 // ========================================
 // 配当予定生成
-// 今年分と翌年分を生成する
+// 本年分と翌年分を生成
 // ========================================
 
 function generateUpcomingDividends() {
 
     const today =
-        new Date();
-
-    today.setHours(
-        0,
-        0,
-        0,
-        0
-    );
+        getTodayStart();
 
     const currentYear =
         today.getFullYear();
 
-    const years = [
+    const targetYears = [
         currentYear,
         currentYear + 1
     ];
 
-    const harvestedKeySet =
+    const harvestedKeys =
         getHarvestedDividendKeySet();
 
-    const generatedSchedule = [];
+    const scheduleMap =
+        new Map();
 
     portfolio.forEach(
         stock => {
 
             const master =
-                stockDatabase[
-                    stock.code
-                ];
+                getStockMaster(
+                    stock
+                );
 
             if (!master) {
 
@@ -1679,14 +1736,22 @@ function generateUpcomingDividends() {
                 );
 
             paymentMonths.forEach(
-                (month, index) => {
+                (
+                    rawMonth,
+                    index
+                ) => {
 
-                    const numericMonth =
-                        Number(month);
+                    const month =
+                        Number(
+                            rawMonth
+                        );
 
                     if (
-                        numericMonth < 1 ||
-                        numericMonth > 12
+                        !Number.isInteger(
+                            month
+                        ) ||
+                        month < 1 ||
+                        month > 12
                     ) {
 
                         return;
@@ -1694,88 +1759,115 @@ function generateUpcomingDividends() {
                     }
 
                     const timing =
-                        paymentTimings[index] ||
+                        paymentTimings[
+                            index
+                        ] ||
                         "mid";
 
-                    const paymentDay =
+                    const day =
                         getPaymentDay(
                             timing
                         );
 
-                    years.forEach(
+                    targetYears.forEach(
                         year => {
 
-                            const paymentDateObject =
+                            const dateObject =
                                 new Date(
                                     year,
-                                    numericMonth - 1,
-                                    paymentDay
+                                    month - 1,
+                                    day
                                 );
 
                             const paymentDate =
                                 getScheduleDateString(
-                                    paymentDateObject
+                                    dateObject
                                 );
 
-                            const scheduleKey =
+                            const key =
                                 createDividendScheduleKey(
                                     stock.code,
                                     paymentDate
                                 );
 
-                            const harvested =
-                                harvestedKeySet.has(
-                                    scheduleKey
-                                );
+                            /*
+                             * 同じ銘柄・同じ日付は
+                             * 1件だけ登録する。
+                             */
+                            if (
+                                scheduleMap.has(
+                                    key
+                                )
+                            ) {
 
-                            generatedSchedule.push({
-                                id:
-                                    createDividendScheduleId(
+                                return;
+
+                            }
+
+                            scheduleMap.set(
+                                key,
+                                {
+                                    id:
+                                        createDividendScheduleId(
+                                            stock.code,
+                                            paymentDate
+                                        ),
+
+                                    key,
+
+                                    code:
                                         stock.code,
-                                        paymentDate
-                                    ),
 
-                                key:
-                                    scheduleKey,
+                                    name:
+                                        String(
+                                            master.name ||
+                                            stock.code
+                                        ),
 
-                                code:
-                                    stock.code,
+                                    market:
+                                        String(
+                                            master.market ||
+                                            stock.market ||
+                                            "JP"
+                                        ),
 
-                                name:
-                                    master.name ||
-                                    stock.code,
+                                    currency:
+                                        String(
+                                            master.currency ||
+                                            stock.currency ||
+                                            "JPY"
+                                        ),
 
-                                market:
-                                    master.market ||
-                                    stock.market ||
-                                    "JP",
+                                    exchangeRate:
+                                        String(
+                                            master.currency
+                                        ).toUpperCase() ===
+                                        "USD"
+                                            ? getExchangeRate()
+                                            : 1,
 
-                                currency:
-                                    master.currency ||
-                                    stock.currency ||
-                                    "JPY",
+                                    amount,
 
-                                exchangeRate:
-                                    master.currency ===
-                                    "USD"
-                                        ? Number(
-                                            settings.exchangeRate ||
-                                            150
+                                    paymentDate,
+
+                                    paymentYear:
+                                        year,
+
+                                    paymentMonth:
+                                        month,
+
+                                    paymentTiming:
+                                        timing,
+
+                                    estimated:
+                                        true,
+
+                                    harvested:
+                                        harvestedKeys.has(
+                                            key
                                         )
-                                        : 1,
-
-                                amount,
-
-                                paymentDate,
-
-                                paymentMonth:
-                                    numericMonth,
-
-                                paymentTiming:
-                                    timing,
-
-                                harvested
-                            });
+                                }
+                            );
 
                         }
                     );
@@ -1786,32 +1878,80 @@ function generateUpcomingDividends() {
         }
     );
 
-    const uniqueSchedule =
-        new Map();
+    upcomingDividends =
+        Array.from(
+            scheduleMap.values()
+        )
+            .sort(
+                (a, b) => {
 
-    generatedSchedule.forEach(
-        item => {
+                    const dateA =
+                        parseScheduleDate(
+                            a.paymentDate
+                        );
 
-            if (
-                !uniqueSchedule.has(
-                    item.key
-                )
-            ) {
+                    const dateB =
+                        parseScheduleDate(
+                            b.paymentDate
+                        );
 
-                uniqueSchedule.set(
-                    item.key,
-                    item
+                    return (
+                        (
+                            dateA?.getTime() ||
+                            0
+                        ) -
+                        (
+                            dateB?.getTime() ||
+                            0
+                        )
+                    );
+
+                }
+            );
+
+}
+
+
+// ========================================
+// 本日収穫できる配当
+// ========================================
+
+function getHarvestableDividends() {
+
+    const today =
+        getTodayStart();
+
+    return upcomingDividends
+        .filter(
+            item => {
+
+                if (
+                    item.harvested
+                ) {
+
+                    return false;
+
+                }
+
+                const paymentDate =
+                    parseScheduleDate(
+                        item.paymentDate
+                    );
+
+                if (!paymentDate) {
+
+                    return false;
+
+                }
+
+                return (
+                    paymentDate.getTime() <=
+                    today.getTime()
                 );
 
             }
-
-        }
-    );
-
-    upcomingDividends =
-        Array.from(
-            uniqueSchedule.values()
-        ).sort(
+        )
+        .sort(
             (a, b) => {
 
                 const dateA =
@@ -1825,9 +1965,14 @@ function generateUpcomingDividends() {
                     );
 
                 return (
-                    dateA?.getTime() || 0
-                ) - (
-                    dateB?.getTime() || 0
+                    (
+                        dateA?.getTime() ||
+                        0
+                    ) -
+                    (
+                        dateB?.getTime() ||
+                        0
+                    )
                 );
 
             }
@@ -1837,134 +1982,211 @@ function generateUpcomingDividends() {
 
 
 // ========================================
-// 今日収穫できる配当
-// 予定日0:00以降に収穫可能
-// ========================================
-
-function getHarvestableDividends() {
-
-    const today =
-        new Date();
-
-    today.setHours(
-        0,
-        0,
-        0,
-        0
-    );
-
-    return upcomingDividends.filter(
-        item => {
-
-            if (
-                item.harvested
-            ) {
-
-                return false;
-
-            }
-
-            const paymentDate =
-                parseScheduleDate(
-                    item.paymentDate
-                );
-
-            if (!paymentDate) {
-
-                return false;
-
-            }
-
-            paymentDate.setHours(
-                0,
-                0,
-                0,
-                0
-            );
-
-            return (
-                paymentDate.getTime() <=
-                today.getTime()
-            );
-
-        }
-    );
-
-}
-
-
-// ========================================
-// 次回収穫予定
+// 次回の配当予定
 // ========================================
 
 function getNextDividend() {
 
     const today =
-        new Date();
+        getTodayStart();
 
-    today.setHours(
-        0,
-        0,
-        0,
-        0
-    );
+    return (
+        upcomingDividends.find(
+            item => {
 
-    return upcomingDividends.find(
-        item => {
+                if (
+                    item.harvested
+                ) {
 
-            if (
-                item.harvested
-            ) {
+                    return false;
 
-                return false;
+                }
 
-            }
+                const paymentDate =
+                    parseScheduleDate(
+                        item.paymentDate
+                    );
 
-            const paymentDate =
-                parseScheduleDate(
-                    item.paymentDate
+                if (!paymentDate) {
+
+                    return false;
+
+                }
+
+                return (
+                    paymentDate.getTime() >
+                    today.getTime()
                 );
 
-            if (!paymentDate) {
-
-                return false;
-
             }
-
-            paymentDate.setHours(
-                0,
-                0,
-                0,
-                0
-            );
-
-            return (
-                paymentDate.getTime() >
-                today.getTime()
-            );
-
-        }
-    ) || null;
+        ) ||
+        null
+    );
 
 }
 
 
 // ========================================
 // 配当額から獲得EXPを計算
-// 100円 = 1EXP
+// 100円につき1EXP
 // ========================================
 
 function calculateHarvestExp(amount) {
 
-    return Math.max(
-        0,
-        Math.floor(
-            Number(
-                amount || 0
-            ) /
-            100
-        )
+    const numericAmount =
+        Number(
+            amount || 0
+        );
+
+    if (
+        !Number.isFinite(
+            numericAmount
+        ) ||
+        numericAmount <= 0
+    ) {
+
+        return 0;
+
+    }
+
+    return Math.floor(
+        numericAmount /
+        100
     );
+
+}
+
+
+// ========================================
+// 履歴に同じ収穫が存在するか
+// ========================================
+
+function isDividendAlreadyHarvested(
+    code,
+    paymentDate
+) {
+
+    const key =
+        createDividendScheduleKey(
+            code,
+            paymentDate
+        );
+
+    const harvestedMatch =
+        harvestedDividends.some(
+            item =>
+                createDividendScheduleKey(
+                    item.code,
+                    item.paymentDate
+                ) ===
+                key
+        );
+
+    const historyMatch =
+        dividendHistory.some(
+            record =>
+                createDividendScheduleKey(
+                    record.stockCode,
+                    record.date
+                ) ===
+                key
+        );
+
+    return (
+        harvestedMatch ||
+        historyMatch
+    );
+
+}
+
+
+// ========================================
+// 収穫記録を作成
+// ========================================
+
+function createHarvestRecord(
+    item,
+    memo
+) {
+
+    const harvestedAt =
+        new Date()
+            .toISOString();
+
+    const gainedExp =
+        calculateHarvestExp(
+            item.amount
+        );
+
+    const scheduleKey =
+        createDividendScheduleKey(
+            item.code,
+            item.paymentDate
+        );
+
+    return {
+        harvestedItem: {
+            ...item,
+
+            harvested:
+                true,
+
+            harvestedAt,
+
+            gainedExp
+        },
+
+        historyItem: {
+            id:
+                `history_${scheduleKey}`,
+
+            scheduleKey,
+
+            stockCode:
+                item.code,
+
+            stockName:
+                item.name,
+
+            amount:
+                Math.max(
+                    0,
+                    Number(
+                        item.amount || 0
+                    )
+                ),
+
+            date:
+                item.paymentDate,
+
+            memo:
+                String(
+                    memo || "収穫"
+                ),
+
+            source:
+                "scheduled-harvest",
+
+            gainedExp,
+
+            currency:
+                item.currency,
+
+            exchangeRate:
+                item.exchangeRate,
+
+            estimated:
+                item.estimated ===
+                true,
+
+            createdAt:
+                harvestedAt,
+
+            harvestedAt
+        },
+
+        gainedExp
+    };
 
 }
 
@@ -1973,9 +2195,7 @@ function calculateHarvestExp(amount) {
 // 配当1件を収穫
 // ========================================
 
-function harvestDividend(
-    scheduleId
-) {
+function harvestDividend(scheduleId) {
 
     const item =
         upcomingDividends.find(
@@ -1987,50 +2207,10 @@ function harvestDividend(
     if (!item) {
 
         showToast(
-            "収穫する配当が見つかりません。"
+            "対象の配当が見つかりません。"
         );
 
-        return;
-
-    }
-
-    const scheduleKey =
-        createDividendScheduleKey(
-            item.code,
-            item.paymentDate
-        );
-
-    const alreadyHarvested =
-        harvestedDividends.some(
-            harvestedItem =>
-                createDividendScheduleKey(
-                    harvestedItem.code,
-                    harvestedItem.paymentDate
-                ) ===
-                scheduleKey
-        ) ||
-        dividendHistory.some(
-            record =>
-                createDividendScheduleKey(
-                    record.stockCode,
-                    record.date
-                ) ===
-                scheduleKey
-        );
-
-    if (
-        item.harvested ||
-        alreadyHarvested
-    ) {
-
-        item.harvested =
-            true;
-
-        showToast(
-            "この配当はすでに収穫済みです。"
-        );
-
-        return;
+        return false;
 
     }
 
@@ -2040,14 +2220,7 @@ function harvestDividend(
         );
 
     const today =
-        new Date();
-
-    today.setHours(
-        0,
-        0,
-        0,
-        0
-    );
+        getTodayStart();
 
     if (
         !paymentDate ||
@@ -2059,89 +2232,61 @@ function harvestDividend(
             "この配当はまだ収穫できません。"
         );
 
-        return;
+        return false;
+
+    }
+
+    if (
+        item.harvested ||
+        isDividendAlreadyHarvested(
+            item.code,
+            item.paymentDate
+        )
+    ) {
+
+        item.harvested =
+            true;
+
+        saveData();
+
+        showToast(
+            "この配当は収穫済みです。"
+        );
+
+        return false;
 
     }
 
     const previousLevel =
         Number(
-            monster.level ||
-            1
+            monster.level || 1
         );
 
-    const gainedExp =
-        calculateHarvestExp(
-            item.amount
+    const record =
+        createHarvestRecord(
+            item,
+            "予定配当を収穫"
         );
-
-    const harvestedAt =
-        new Date()
-            .toISOString();
 
     item.harvested =
         true;
 
-    const harvestedRecord = {
-        ...item,
-
-        harvested:
-            true,
-
-        harvestedAt,
-
-        gainedExp
-    };
-
     harvestedDividends.push(
-        harvestedRecord
+        record.harvestedItem
     );
 
-    dividendHistory.push({
-        id:
-            `history_${scheduleKey}`,
-
-        scheduleKey,
-
-        stockCode:
-            item.code,
-
-        stockName:
-            item.name,
-
-        amount:
-            Number(
-                item.amount || 0
-            ),
-
-        date:
-            item.paymentDate,
-
-        memo:
-            "自動収穫",
-
-        gainedExp,
-
-        currency:
-            item.currency,
-
-        exchangeRate:
-            item.exchangeRate,
-
-        createdAt:
-            harvestedAt,
-
-        harvestedAt
-    });
+    dividendHistory.push(
+        record.historyItem
+    );
 
     monster.exp =
         Math.max(
             0,
             Number(
-                monster.exp ||
-                0
+                monster.exp || 0
             )
         ) +
-        gainedExp;
+        record.gainedExp;
 
     updateMonsterLevel();
 
@@ -2150,14 +2295,18 @@ function harvestDividend(
     render();
 
     const levelUpText =
-        Number(monster.level) >
+        Number(
+            monster.level
+        ) >
         previousLevel
-            ? ` Lv.${monster.level}へレベルアップ！`
+            ? ` Lv.${monster.level}になりました。`
             : "";
 
     showToast(
-        `${item.name}を収穫しました！ ＋${gainedExp}EXP${levelUpText}`
+        `${item.name}の配当を収穫しました。＋${record.gainedExp} EXP${levelUpText}`
     );
+
+    return true;
 
 }
 
@@ -2176,7 +2325,7 @@ function harvestAll() {
     ) {
 
         showToast(
-            "今日収穫できる配当はありません。"
+            "本日収穫できる配当はありません。"
         );
 
         return;
@@ -2185,33 +2334,20 @@ function harvestAll() {
 
     const previousLevel =
         Number(
-            monster.level ||
-            1
+            monster.level || 1
         );
 
+    let harvestedCount = 0;
     let totalAmount = 0;
     let totalExp = 0;
-    let harvestedCount = 0;
-
-    const harvestedKeySet =
-        getHarvestedDividendKeySet();
-
-    const harvestedAt =
-        new Date()
-            .toISOString();
 
     harvestable.forEach(
         item => {
 
-            const scheduleKey =
-                createDividendScheduleKey(
+            if (
+                isDividendAlreadyHarvested(
                     item.code,
                     item.paymentDate
-                );
-
-            if (
-                harvestedKeySet.has(
-                    scheduleKey
                 )
             ) {
 
@@ -2222,65 +2358,24 @@ function harvestAll() {
 
             }
 
-            const gainedExp =
-                calculateHarvestExp(
-                    item.amount
+            const record =
+                createHarvestRecord(
+                    item,
+                    "予定配当をまとめて収穫"
                 );
 
             item.harvested =
                 true;
 
-            harvestedDividends.push({
-                ...item,
-
-                harvested:
-                    true,
-
-                harvestedAt,
-
-                gainedExp
-            });
-
-            dividendHistory.push({
-                id:
-                    `history_${scheduleKey}`,
-
-                scheduleKey,
-
-                stockCode:
-                    item.code,
-
-                stockName:
-                    item.name,
-
-                amount:
-                    Number(
-                        item.amount || 0
-                    ),
-
-                date:
-                    item.paymentDate,
-
-                memo:
-                    "まとめて収穫",
-
-                gainedExp,
-
-                currency:
-                    item.currency,
-
-                exchangeRate:
-                    item.exchangeRate,
-
-                createdAt:
-                    harvestedAt,
-
-                harvestedAt
-            });
-
-            harvestedKeySet.add(
-                scheduleKey
+            harvestedDividends.push(
+                record.harvestedItem
             );
+
+            dividendHistory.push(
+                record.historyItem
+            );
+
+            harvestedCount += 1;
 
             totalAmount +=
                 Number(
@@ -2288,10 +2383,7 @@ function harvestAll() {
                 );
 
             totalExp +=
-                gainedExp;
-
-            harvestedCount +=
-                1;
+                record.gainedExp;
 
         }
     );
@@ -2300,8 +2392,10 @@ function harvestAll() {
         harvestedCount === 0
     ) {
 
+        saveData();
+
         showToast(
-            "対象の配当はすでに収穫済みです。"
+            "対象の配当はすべて収穫済みです。"
         );
 
         return;
@@ -2312,8 +2406,7 @@ function harvestAll() {
         Math.max(
             0,
             Number(
-                monster.exp ||
-                0
+                monster.exp || 0
             )
         ) +
         totalExp;
@@ -2325,31 +2418,38 @@ function harvestAll() {
     render();
 
     const levelUpText =
-        Number(monster.level) >
+        Number(
+            monster.level
+        ) >
         previousLevel
-            ? ` Lv.${monster.level}へレベルアップ！`
+            ? ` Lv.${monster.level}になりました。`
             : "";
 
     showToast(
-        `${harvestedCount}件・¥${formatYen(totalAmount)}を収穫！ ＋${totalExp}EXP${levelUpText}`
+        `${harvestedCount}件、¥${formatYen(totalAmount)}の配当を収穫しました。＋${totalExp} EXP${levelUpText}`
     );
 
 }
 
 
 // ========================================
-// 今日の収穫可能額
+// 本日収穫可能な配当額
 // ========================================
 
 function getTodayHarvestAmount() {
 
     return getHarvestableDividends()
         .reduce(
-            (total, item) =>
+            (
+                total,
+                item
+            ) =>
                 total +
-                Number(
-                    item.amount ||
-                    0
+                Math.max(
+                    0,
+                    Number(
+                        item.amount || 0
+                    )
                 ),
             0
         );
