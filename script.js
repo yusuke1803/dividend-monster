@@ -4325,72 +4325,153 @@ function renderAchievements() {
 
 }
 // ========================================
-// Dividend Monsters Ver4.3
+// Dividend Monsters Ver5.0
 // Part 6 / 8
-// Portfolio + History + Harvest
+// Portfolio + History + Harvest + Forms
 // ========================================
 
-// ---------- Part6 DOM ----------
+
+// ========================================
+// Part6 DOM
+// ========================================
 
 const stockDialog =
-    document.getElementById("stockDialog");
+    document.getElementById(
+        "stockDialog"
+    );
 
 const stockForm =
-    document.getElementById("stockForm");
+    document.getElementById(
+        "stockForm"
+    );
 
 const stockCodeInput =
-    document.getElementById("stockCode");
+    document.getElementById(
+        "stockCode"
+    );
 
 const shareCountInput =
-    document.getElementById("shareCount");
+    document.getElementById(
+        "shareCount"
+    );
 
 const stockSuggestions =
-    document.getElementById("stockSuggestions");
+    document.getElementById(
+        "stockSuggestions"
+    );
 
 const stockPreview =
-    document.getElementById("stockPreview");
+    document.getElementById(
+        "stockPreview"
+    );
 
 const stockFormError =
-    document.getElementById("stockFormError");
+    document.getElementById(
+        "stockFormError"
+    );
 
 const stockDialogTitle =
-    document.getElementById("stockDialogTitle");
+    document.getElementById(
+        "stockDialogTitle"
+    );
 
 const stockSubmitButton =
-    document.getElementById("stockSubmitButton");
+    document.getElementById(
+        "stockSubmitButton"
+    );
 
 const stockSort =
-    document.getElementById("stockSort");
+    document.getElementById(
+        "stockSort"
+    );
 
 const stockCount =
-    document.getElementById("stockCount");
+    document.getElementById(
+        "stockCount"
+    );
 
 const summaryStockCount =
-    document.getElementById("summaryStockCount");
+    document.getElementById(
+        "summaryStockCount"
+    );
 
-let editingStockId = null;
+const dividendDialog =
+    document.getElementById(
+        "dividendDialog"
+    );
 
+const dividendForm =
+    document.getElementById(
+        "dividendForm"
+    );
 
-// ========================================
-// ID生成
-// ========================================
+const dividendStockCode =
+    document.getElementById(
+        "dividendStockCode"
+    );
 
-function createPortfolioId() {
+const receivedDividendAmount =
+    document.getElementById(
+        "receivedDividendAmount"
+    );
 
-    if (
-        window.crypto &&
-        typeof window.crypto.randomUUID === "function"
-    ) {
+const receivedDividendDate =
+    document.getElementById(
+        "receivedDividendDate"
+    );
 
-        return window.crypto.randomUUID();
+const receivedDividendMemo =
+    document.getElementById(
+        "receivedDividendMemo"
+    );
 
-    }
+const dividendFormError =
+    document.getElementById(
+        "dividendFormError"
+    );
 
-    return `stock_${Date.now()}_${Math.random()
-        .toString(16)
-        .slice(2)}`;
+const expenseDialog =
+    document.getElementById(
+        "expenseDialog"
+    );
 
-}
+const expenseForm =
+    document.getElementById(
+        "expenseForm"
+    );
+
+const expenseList =
+    document.getElementById(
+        "expenseList"
+    );
+
+const housingExpense =
+    document.getElementById(
+        "housingExpense"
+    );
+
+const foodExpense =
+    document.getElementById(
+        "foodExpense"
+    );
+
+const utilityExpense =
+    document.getElementById(
+        "utilityExpense"
+    );
+
+const communicationExpense =
+    document.getElementById(
+        "communicationExpense"
+    );
+
+const otherExpense =
+    document.getElementById(
+        "otherExpense"
+    );
+
+let editingStockId =
+    null;
 
 
 // ========================================
@@ -4399,12 +4480,14 @@ function createPortfolioId() {
 
 function escapeHtml(value) {
 
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    return String(
+        value ?? ""
+    )
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
 }
 
@@ -4415,7 +4498,22 @@ function escapeHtml(value) {
 
 function formatShares(value) {
 
-    return Number(value || 0)
+    const numericValue =
+        Number(
+            value || 0
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+
+        return "0";
+
+    }
+
+    return numericValue
         .toLocaleString(
             "ja-JP",
             {
@@ -4427,13 +4525,29 @@ function formatShares(value) {
 
 
 // ========================================
+// 日付入力用初期値
+// ========================================
+
+function getTodayInputValue() {
+
+    return getScheduleDateString(
+        new Date()
+    );
+
+}
+
+
+// ========================================
 // 銘柄検索
+// コード・ticker・名称に対応
 // ========================================
 
 function findStockMaster(keyword) {
 
     const normalized =
-        String(keyword || "")
+        String(
+            keyword || ""
+        )
             .trim()
             .toUpperCase();
 
@@ -4443,55 +4557,89 @@ function findStockMaster(keyword) {
 
     }
 
-    if (stockDatabase[normalized]) {
+    const resolvedCode =
+        resolveStockCode(
+            normalized
+        );
+
+    if (
+        stockDatabase[
+            resolvedCode
+        ]
+    ) {
 
         return {
-            code: normalized,
-            master: stockDatabase[normalized]
+            code:
+                resolvedCode,
+
+            master:
+                stockDatabase[
+                    resolvedCode
+                ]
         };
 
     }
 
-    const matched =
-        Object.entries(stockDatabase)
-            .find(([code, master]) => {
+    const matchedEntry =
+        Object.entries(
+            stockDatabase
+        )
+            .find(
+                ([code, master]) => {
 
-                const codeText =
-                    String(code || "")
-                        .toUpperCase();
+                    const codeText =
+                        String(
+                            code || ""
+                        )
+                            .trim()
+                            .toUpperCase();
 
-                const tickerText =
-                    String(master.ticker || "")
-                        .toUpperCase();
+                    const tickerText =
+                        String(
+                            master?.ticker || ""
+                        )
+                            .trim()
+                            .toUpperCase();
 
-                const nameText =
-                    String(master.name || "")
-                        .toUpperCase();
+                    const nameText =
+                        String(
+                            master?.name || ""
+                        )
+                            .trim()
+                            .toUpperCase();
 
-                return (
-                    codeText === normalized ||
-                    tickerText === normalized ||
-                    nameText.includes(normalized)
-                );
+                    return (
+                        codeText ===
+                            normalized ||
+                        tickerText ===
+                            normalized ||
+                        nameText.includes(
+                            normalized
+                        )
+                    );
 
-            });
+                }
+            );
 
-    if (!matched) {
+    if (!matchedEntry) {
 
         return null;
 
     }
 
     return {
-        code: matched[0],
-        master: matched[1]
+        code:
+            matchedEntry[0],
+
+        master:
+            matchedEntry[1]
     };
 
 }
 
 
 // ========================================
-// 銘柄候補生成
+// 銘柄候補
 // ========================================
 
 function renderStockSuggestions() {
@@ -4503,13 +4651,43 @@ function renderStockSuggestions() {
     }
 
     stockSuggestions.innerHTML =
-        Object.entries(stockDatabase)
-            .map(([code, master]) => `
-                <option
-                    value="${escapeHtml(code)}"
-                    label="${escapeHtml(master.name || code)}"
-                ></option>
-            `)
+        Object.entries(
+            stockDatabase
+        )
+            .sort(
+                (a, b) => {
+
+                    const nameA =
+                        String(
+                            a[1]?.name ||
+                            a[0]
+                        );
+
+                    const nameB =
+                        String(
+                            b[1]?.name ||
+                            b[0]
+                        );
+
+                    return nameA
+                        .localeCompare(
+                            nameB,
+                            "ja"
+                        );
+
+                }
+            )
+            .map(
+                ([code, master]) => `
+                    <option
+                        value="${escapeHtml(code)}"
+                        label="${escapeHtml(
+                            master?.name ||
+                            code
+                        )}"
+                    ></option>
+                `
+            )
             .join("");
 
 }
@@ -4528,50 +4706,97 @@ function updateStockPreview() {
     }
 
     const keyword =
-        stockCodeInput?.value || "";
+        String(
+            stockCodeInput?.value ||
+            ""
+        ).trim();
 
-    if (!keyword.trim()) {
+    if (!keyword) {
 
-        stockPreview.textContent = "";
+        stockPreview.textContent =
+            "";
 
         return;
 
     }
 
     const matched =
-        findStockMaster(keyword);
+        findStockMaster(
+            keyword
+        );
 
     if (!matched) {
 
         stockPreview.textContent =
-            "stocks.jsonに登録されていない銘柄です。";
+            "登録済みの銘柄データに該当しません。";
 
         return;
 
     }
 
-    const { code, master } =
-        matched;
+    const {
+        code,
+        master
+    } = matched;
+
+    const annualDividendPerShare =
+        Number(
+            master
+                .annualDividendPerShare ||
+            0
+        );
+
+    const currentPrice =
+        Number(
+            master.currentPrice ||
+            0
+        );
 
     stockPreview.innerHTML = `
         <strong>
-            ${escapeHtml(master.name || code)}
+            ${escapeHtml(
+                master.name ||
+                code
+            )}
         </strong>
+
         <br>
-        コード：${escapeHtml(code)}
+
+        ${escapeHtml(code)}
+        ・
+        ${escapeHtml(
+            master.market ||
+            "市場未設定"
+        )}
+
         <br>
+
         年間1株配当：
-        ${Number(
-            master.annualDividendPerShare || 0
-        ).toLocaleString("ja-JP")}
-        ${escapeHtml(master.currency || "JPY")}
+        ${formatNumber(
+            annualDividendPerShare
+        )}
+        ${escapeHtml(
+            master.currency ||
+            "JPY"
+        )}
+
+        <br>
+
+        参考価格：
+        ${formatNumber(
+            currentPrice
+        )}
+        ${escapeHtml(
+            master.currency ||
+            "JPY"
+        )}
     `;
 
 }
 
 
 // ========================================
-// フォームエラー
+// 銘柄フォームエラー
 // ========================================
 
 function showStockFormError(message) {
@@ -4583,7 +4808,9 @@ function showStockFormError(message) {
     }
 
     stockFormError.textContent =
-        message;
+        String(
+            message || ""
+        );
 
     stockFormError.hidden =
         false;
@@ -4599,28 +4826,76 @@ function clearStockFormError() {
 
     }
 
-    stockFormError.textContent = "";
+    stockFormError.textContent =
+        "";
 
-    stockFormError.hidden = true;
+    stockFormError.hidden =
+        true;
 
 }
 
 
 // ========================================
-// 新規追加ダイアログ
+// 配当フォームエラー
+// ========================================
+
+function showDividendFormError(message) {
+
+    if (!dividendFormError) {
+
+        return;
+
+    }
+
+    dividendFormError.textContent =
+        String(
+            message || ""
+        );
+
+    dividendFormError.hidden =
+        false;
+
+}
+
+
+function clearDividendFormError() {
+
+    if (!dividendFormError) {
+
+        return;
+
+    }
+
+    dividendFormError.textContent =
+        "";
+
+    dividendFormError.hidden =
+        true;
+
+}
+
+
+// ========================================
+// 新規銘柄ダイアログ
 // ========================================
 
 function openNewStockDialog() {
 
-    editingStockId = null;
+    editingStockId =
+        null;
 
-    stockForm?.reset();
+    if (stockForm) {
+
+        stockForm.reset();
+
+    }
 
     clearStockFormError();
 
     if (stockPreview) {
 
-        stockPreview.textContent = "";
+        stockPreview.textContent =
+            "";
 
     }
 
@@ -4640,7 +4915,8 @@ function openNewStockDialog() {
 
     if (
         stockDialog &&
-        typeof stockDialog.showModal === "function"
+        typeof stockDialog.showModal ===
+            "function"
     ) {
 
         stockDialog.showModal();
@@ -4651,14 +4927,16 @@ function openNewStockDialog() {
 
 
 // ========================================
-// 編集ダイアログ
+// 銘柄編集ダイアログ
 // ========================================
 
 function openEditStockDialog(stockId) {
 
     const stock =
         portfolio.find(
-            item => item.id === stockId
+            item =>
+                item.id ===
+                stockId
         );
 
     if (!stock) {
@@ -4708,7 +4986,8 @@ function openEditStockDialog(stockId) {
 
     if (
         stockDialog &&
-        typeof stockDialog.showModal === "function"
+        typeof stockDialog.showModal ===
+            "function"
     ) {
 
         stockDialog.showModal();
@@ -4729,11 +5008,15 @@ function submitStockForm(event) {
     clearStockFormError();
 
     const keyword =
-        String(stockCodeInput?.value || "")
-            .trim();
+        String(
+            stockCodeInput?.value ||
+            ""
+        ).trim();
 
     const shares =
-        Number(shareCountInput?.value);
+        Number(
+            shareCountInput?.value
+        );
 
     if (!keyword) {
 
@@ -4746,7 +5029,9 @@ function submitStockForm(event) {
     }
 
     if (
-        !Number.isFinite(shares) ||
+        !Number.isFinite(
+            shares
+        ) ||
         shares <= 0
     ) {
 
@@ -4759,28 +5044,34 @@ function submitStockForm(event) {
     }
 
     const matched =
-        findStockMaster(keyword);
+        findStockMaster(
+            keyword
+        );
 
     if (!matched) {
 
         showStockFormError(
-            "この銘柄はstocks.jsonに登録されていません。"
+            "この銘柄は登録済みの銘柄データにありません。"
         );
 
         return;
 
     }
 
-    const { code, master } =
-        matched;
+    const {
+        code,
+        master
+    } = matched;
 
     if (editingStockId) {
 
         const duplicate =
             portfolio.some(
                 item =>
-                    item.code === code &&
-                    item.id !== editingStockId
+                    item.code ===
+                        code &&
+                    item.id !==
+                        editingStockId
             );
 
         if (duplicate) {
@@ -4794,27 +5085,42 @@ function submitStockForm(event) {
         }
 
         portfolio =
-            portfolio.map(item => {
+            portfolio.map(
+                item => {
 
-                if (
-                    item.id !== editingStockId
-                ) {
+                    if (
+                        item.id !==
+                        editingStockId
+                    ) {
 
-                    return item;
+                        return item;
+
+                    }
+
+                    return {
+                        ...item,
+
+                        code,
+
+                        shares,
+
+                        market:
+                            String(
+                                master.market ||
+                                item.market ||
+                                "JP"
+                            ),
+
+                        currency:
+                            String(
+                                master.currency ||
+                                item.currency ||
+                                "JPY"
+                            )
+                    };
 
                 }
-
-                return {
-                    ...item,
-                    code,
-                    shares,
-                    market:
-                        master.market || "JP",
-                    currency:
-                        master.currency || "JPY"
-                };
-
-            });
+            );
 
         showToast(
             `${master.name || code}を更新しました。`
@@ -4824,29 +5130,47 @@ function submitStockForm(event) {
 
         const existing =
             portfolio.find(
-                item => item.code === code
+                item =>
+                    item.code ===
+                    code
             );
 
         if (existing) {
 
             existing.shares =
-                Number(existing.shares || 0) +
+                Number(
+                    existing.shares ||
+                    0
+                ) +
                 shares;
 
             showToast(
-                `${master.name || code}の株数を追加しました。`
+                `${master.name || code}の保有株数を更新しました。`
             );
 
         } else {
 
             portfolio.push({
-                id: createPortfolioId(),
+                id:
+                    createAppId(
+                        "stock"
+                    ),
+
                 code,
+
                 shares,
+
                 market:
-                    master.market || "JP",
+                    String(
+                        master.market ||
+                        "JP"
+                    ),
+
                 currency:
-                    master.currency || "JPY"
+                    String(
+                        master.currency ||
+                        "JPY"
+                    )
             });
 
             showToast(
@@ -4857,7 +5181,8 @@ function submitStockForm(event) {
 
     }
 
-    editingStockId = null;
+    editingStockId =
+        null;
 
     generateUpcomingDividends();
 
@@ -4865,7 +5190,8 @@ function submitStockForm(event) {
 
     if (
         stockDialog &&
-        typeof stockDialog.close === "function"
+        typeof stockDialog.close ===
+            "function"
     ) {
 
         stockDialog.close();
@@ -4885,24 +5211,35 @@ function deleteStock(stockId) {
 
     const stock =
         portfolio.find(
-            item => item.id === stockId
+            item =>
+                item.id ===
+                stockId
         );
 
     if (!stock) {
+
+        showToast(
+            "削除する銘柄が見つかりません。"
+        );
 
         return;
 
     }
 
     const master =
-        stockDatabase[stock.code];
+        getStockMaster(
+            stock
+        );
 
     const name =
-        master?.name || stock.code;
+        String(
+            master?.name ||
+            stock.code
+        );
 
     const confirmed =
         window.confirm(
-            `${name}を削除しますか？`
+            `${name}をポートフォリオから削除しますか？`
         );
 
     if (!confirmed) {
@@ -4913,7 +5250,9 @@ function deleteStock(stockId) {
 
     portfolio =
         portfolio.filter(
-            item => item.id !== stockId
+            item =>
+                item.id !==
+                stockId
         );
 
     generateUpcomingDividends();
@@ -4930,69 +5269,78 @@ function deleteStock(stockId) {
 
 
 // ========================================
-// 1銘柄の年間配当
+// 予想利回り
 // ========================================
 
-function calculateStockAnnualDividend(stock) {
+function calculateStockDividendYield(
+    stock
+) {
 
-    const master =
-        stockDatabase[stock.code];
+    const annualDividend =
+        calculateStockAnnualDividend(
+            stock
+        );
 
-    if (!master) {
+    const value =
+        calculateStockValue(
+            stock
+        );
+
+    if (value <= 0) {
 
         return 0;
 
     }
 
-    let amount =
-        Number(
-            master.annualDividendPerShare || 0
-        ) *
-        Number(stock.shares || 0);
-
-    if (master.currency === "USD") {
-
-        amount *=
-            Number(
-                settings.exchangeRate || 150
-            );
-
-    }
-
-    return Math.max(0, amount);
+    return (
+        annualDividend /
+        value
+    ) *
+    100;
 
 }
 
 
 // ========================================
-// 1銘柄の評価額
+// 銘柄ごとの次回収穫予定
 // ========================================
 
-function calculateStockValue(stock) {
+function getNextDividendForStock(
+    stockCode
+) {
 
-    const master =
-        stockDatabase[stock.code];
+    const today =
+        getTodayStart();
 
-    if (!master) {
+    return (
+        upcomingDividends.find(
+            item => {
 
-        return 0;
+                if (
+                    item.code !==
+                        stockCode ||
+                    item.harvested
+                ) {
 
-    }
+                    return false;
 
-    let value =
-        Number(master.currentPrice || 0) *
-        Number(stock.shares || 0);
+                }
 
-    if (master.currency === "USD") {
+                const date =
+                    parseScheduleDate(
+                        item.paymentDate
+                    );
 
-        value *=
-            Number(
-                settings.exchangeRate || 150
-            );
+                return (
+                    date &&
+                    date.getTime() >
+                        today.getTime()
+                );
 
-    }
-
-    return Math.max(0, value);
+            }
+        ) ||
+        null
+    );
 
 }
 
@@ -5006,14 +5354,20 @@ function getSortedPortfolio() {
     const copied =
         [...portfolio];
 
-    switch (stockSort?.value) {
+    switch (
+        stockSort?.value
+    ) {
 
         case "shares-desc":
 
             return copied.sort(
                 (a, b) =>
-                    Number(b.shares || 0) -
-                    Number(a.shares || 0)
+                    Number(
+                        b.shares || 0
+                    ) -
+                    Number(
+                        a.shares || 0
+                    )
             );
 
         case "name-asc":
@@ -5022,16 +5376,24 @@ function getSortedPortfolio() {
                 (a, b) => {
 
                     const nameA =
-                        stockDatabase[a.code]?.name ||
+                        getStockMaster(
+                            a
+                        )?.name ||
                         a.code;
 
                     const nameB =
-                        stockDatabase[b.code]?.name ||
+                        getStockMaster(
+                            b
+                        )?.name ||
                         b.code;
 
-                    return String(nameA)
+                    return String(
+                        nameA
+                    )
                         .localeCompare(
-                            String(nameB),
+                            String(
+                                nameB
+                            ),
                             "ja"
                         );
 
@@ -5043,8 +5405,12 @@ function getSortedPortfolio() {
 
             return copied.sort(
                 (a, b) =>
-                    calculateStockAnnualDividend(b) -
-                    calculateStockAnnualDividend(a)
+                    calculateStockAnnualDividend(
+                        b
+                    ) -
+                    calculateStockAnnualDividend(
+                        a
+                    )
             );
 
     }
@@ -5091,11 +5457,11 @@ function renderPortfolio() {
                 </div>
 
                 <h3>
-                    保有銘柄がありません
+                    ポートフォリオはまだ登録されていません
                 </h3>
 
                 <p>
-                    「銘柄追加」から登録してください。
+                    最初の銘柄を追加すると、年間予想配当と評価額を表示します。
                 </p>
 
             </div>
@@ -5106,210 +5472,686 @@ function renderPortfolio() {
     }
 
     const totalValue =
-        portfolio.reduce(
-            (total, stock) =>
-                total +
-                calculateStockValue(stock),
-            0
-        );
+        calculatePortfolioValue();
 
     stockList.innerHTML =
         getSortedPortfolio()
-            .map(stock => {
+            .map(
+                stock => {
 
-                const master =
-                    stockDatabase[stock.code];
+                    const master =
+                        getStockMaster(
+                            stock
+                        );
 
-                if (!master) {
+                    if (!master) {
 
-                    return "";
+                        return "";
 
-                }
+                    }
 
-                const annual =
-                    calculateStockAnnualDividend(
-                        stock
-                    );
+                    const annualDividend =
+                        calculateStockAnnualDividend(
+                            stock
+                        );
 
-                const value =
-                    calculateStockValue(stock);
+                    const value =
+                        calculateStockValue(
+                            stock
+                        );
 
-                const ratio =
-                    totalValue > 0
-                        ? (
-                            value /
-                            totalValue
-                        ) * 100
-                        : 0;
+                    const ratio =
+                        totalValue > 0
+                            ? (
+                                value /
+                                totalValue
+                            ) *
+                            100
+                            : 0;
 
-                const next =
-                    upcomingDividends.find(
-                        item =>
-                            item.code === stock.code &&
-                            !item.harvested &&
-                            parseScheduleDate(
-                                item.paymentDate
-                            ) >
-                            new Date()
-                    );
+                    const dividendYield =
+                        calculateStockDividendYield(
+                            stock
+                        );
 
-                return `
-                    <article class="stock-card">
+                    const nextDividend =
+                        getNextDividendForStock(
+                            stock.code
+                        );
 
-                        <div class="stock-info">
+                    const symbol =
+                        String(
+                            stock.code ||
+                            "DM"
+                        )
+                            .slice(
+                                0,
+                                3
+                            )
+                            .toUpperCase();
 
-                            <h3>
+                    return `
+                        <article class="stock-card">
+
+                            <div class="asset-symbol">
                                 ${escapeHtml(
-                                    master.name ||
-                                    stock.code
+                                    symbol
                                 )}
-                            </h3>
+                            </div>
 
-                            <p>
-                                ${escapeHtml(stock.code)}
-                                ・
-                                ${formatShares(stock.shares)}株
-                                ・
-                                ${escapeHtml(
-                                    master.market ||
-                                    stock.market ||
-                                    "JP"
-                                )}
-                            </p>
+                            <div class="stock-info">
 
-                        </div>
+                                <h3>
+                                    ${escapeHtml(
+                                        master.name ||
+                                        stock.code
+                                    )}
+                                </h3>
 
-                        <div class="stock-dividend">
+                                <div class="stock-meta">
 
-                            <small>
-                                年間配当
-                            </small>
+                                    <span>
+                                        ${escapeHtml(
+                                            stock.code
+                                        )}
+                                    </span>
 
-                            <strong>
-                                ¥${formatYen(annual)}
-                            </strong>
+                                    <span>
+                                        ${formatShares(
+                                            stock.shares
+                                        )}株
+                                    </span>
 
-                        </div>
+                                    <span>
+                                        ${escapeHtml(
+                                            master.market ||
+                                            stock.market ||
+                                            "市場未設定"
+                                        )}
+                                    </span>
 
-                        <div class="stock-value">
+                                </div>
 
-                            <div>
+                            </div>
+
+                            <div class="stock-dividend">
 
                                 <small>
-                                    評価額
+                                    年間予想配当
                                 </small>
 
                                 <strong>
-                                    ¥${formatYen(value)}
+                                    ¥${formatYen(
+                                        annualDividend
+                                    )}
                                 </strong>
 
                             </div>
 
-                            <small>
-                                資産構成比
-                                ${ratio.toFixed(1)}%
-                                <br>
-                                次回：
-                                ${
-                                    next
-                                        ? formatDate(
-                                            next.paymentDate
-                                        )
-                                        : "予定なし"
-                                }
-                            </small>
+                            <div class="stock-value">
 
-                        </div>
+                                <div>
 
-                        <div class="stock-ratio">
+                                    <small>
+                                        評価額
+                                    </small>
 
-                            <div class="ratio-track">
+                                    <strong>
+                                        ¥${formatYen(
+                                            value
+                                        )}
+                                    </strong>
 
-                                <div
-                                    class="ratio-bar"
-                                    style="width:${Math.min(
-                                        ratio,
-                                        100
-                                    )}%"
-                                ></div>
+                                </div>
+
+                                <small>
+                                    予想利回り
+                                    ${dividendYield.toFixed(
+                                        2
+                                    )}%
+
+                                    <br>
+
+                                    次回予想
+                                    ${
+                                        nextDividend
+                                            ? formatDate(
+                                                nextDividend
+                                                    .paymentDate
+                                            )
+                                            : "予定なし"
+                                    }
+                                </small>
 
                             </div>
 
-                        </div>
+                            <div class="stock-ratio">
 
-                        <div class="stock-actions">
+                                <div class="ratio-track">
 
-                            <button
-                                class="edit-stock-button"
-                                type="button"
-                                data-edit-stock="${escapeHtml(
-                                    stock.id
-                                )}"
-                            >
-                                編集
-                            </button>
+                                    <div
+                                        class="ratio-bar"
+                                        style="width:${Math.min(
+                                            ratio,
+                                            100
+                                        )}%"
+                                    ></div>
 
-                            <button
-                                class="delete-stock-button"
-                                type="button"
-                                data-delete-stock="${escapeHtml(
-                                    stock.id
-                                )}"
-                            >
-                                削除
-                            </button>
+                                </div>
 
-                        </div>
+                                <small>
+                                    資産構成比
+                                    ${ratio.toFixed(
+                                        1
+                                    )}%
+                                </small>
 
-                    </article>
-                `;
+                            </div>
 
-            })
+                            <div class="stock-actions">
+
+                                <button
+                                    class="edit-stock-button"
+                                    type="button"
+                                    data-edit-stock="${escapeHtml(
+                                        stock.id
+                                    )}"
+                                >
+                                    編集
+                                </button>
+
+                                <button
+                                    class="delete-stock-button"
+                                    type="button"
+                                    data-delete-stock="${escapeHtml(
+                                        stock.id
+                                    )}"
+                                >
+                                    削除
+                                </button>
+
+                            </div>
+
+                        </article>
+                    `;
+
+                }
+            )
             .join("");
 
-    document
+    stockList
         .querySelectorAll(
             "[data-edit-stock]"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                    openEditStockDialog(
-                        button.dataset.editStock
-                    );
+                        openEditStockDialog(
+                            button.dataset
+                                .editStock
+                        );
 
-                }
-            );
+                    }
+                );
 
-        });
+            }
+        );
 
-    document
+    stockList
         .querySelectorAll(
             "[data-delete-stock]"
         )
-        .forEach(button => {
+        .forEach(
+            button => {
 
-            button.addEventListener(
-                "click",
-                () => {
+                button.addEventListener(
+                    "click",
+                    () => {
 
-                    deleteStock(
-                        button.dataset.deleteStock
-                    );
+                        deleteStock(
+                            button.dataset
+                                .deleteStock
+                        );
 
-                }
-            );
+                    }
+                );
 
-        });
+            }
+        );
 
 }
 
 
 // ========================================
-// 配当履歴
+// 手動配当用銘柄選択肢
+// ========================================
+
+function renderDividendStockOptions() {
+
+    if (!dividendStockCode) {
+
+        return;
+
+    }
+
+    const currentValue =
+        dividendStockCode.value;
+
+    dividendStockCode.innerHTML = `
+        <option value="">
+            銘柄を選択
+        </option>
+
+        ${getSortedPortfolio()
+            .map(
+                stock => {
+
+                    const master =
+                        getStockMaster(
+                            stock
+                        );
+
+                    return `
+                        <option
+                            value="${escapeHtml(
+                                stock.code
+                            )}"
+                        >
+                            ${escapeHtml(
+                                master?.name ||
+                                stock.code
+                            )}
+                        </option>
+                    `;
+
+                }
+            )
+            .join("")}
+    `;
+
+    if (
+        currentValue &&
+        portfolio.some(
+            stock =>
+                stock.code ===
+                currentValue
+        )
+    ) {
+
+        dividendStockCode.value =
+            currentValue;
+
+    }
+
+}
+
+
+// ========================================
+// 手動配当ダイアログ
+// ========================================
+
+function openDividendDialog() {
+
+    clearDividendFormError();
+
+    renderDividendStockOptions();
+
+    if (
+        dividendForm
+    ) {
+
+        dividendForm.reset();
+
+    }
+
+    if (
+        receivedDividendDate
+    ) {
+
+        receivedDividendDate.value =
+            getTodayInputValue();
+
+    }
+
+    if (
+        portfolio.length === 1 &&
+        dividendStockCode
+    ) {
+
+        dividendStockCode.value =
+            portfolio[0].code;
+
+    }
+
+    if (
+        dividendDialog &&
+        typeof dividendDialog.showModal ===
+            "function"
+    ) {
+
+        dividendDialog.showModal();
+
+    }
+
+}
+
+
+// ========================================
+// 手動配当記録
+// ========================================
+
+function submitDividendForm(event) {
+
+    event.preventDefault();
+
+    clearDividendFormError();
+
+    const stockCode =
+        String(
+            dividendStockCode?.value ||
+            ""
+        )
+            .trim()
+            .toUpperCase();
+
+    const amount =
+        Number(
+            receivedDividendAmount?.value
+        );
+
+    const date =
+        String(
+            receivedDividendDate?.value ||
+            ""
+        ).trim();
+
+    const memo =
+        String(
+            receivedDividendMemo?.value ||
+            ""
+        ).trim();
+
+    if (!stockCode) {
+
+        showDividendFormError(
+            "銘柄を選択してください。"
+        );
+
+        return;
+
+    }
+
+    const stock =
+        portfolio.find(
+            item =>
+                item.code ===
+                stockCode
+        );
+
+    if (!stock) {
+
+        showDividendFormError(
+            "選択した銘柄がポートフォリオにありません。"
+        );
+
+        return;
+
+    }
+
+    if (
+        !Number.isFinite(
+            amount
+        ) ||
+        amount <= 0
+    ) {
+
+        showDividendFormError(
+            "受取金額を正しく入力してください。"
+        );
+
+        return;
+
+    }
+
+    if (
+        !parseScheduleDate(
+            date
+        )
+    ) {
+
+        showDividendFormError(
+            "受取日を正しく入力してください。"
+        );
+
+        return;
+
+    }
+
+    const master =
+        getStockMaster(
+            stock
+        );
+
+    const gainedExp =
+        calculateHarvestExp(
+            amount
+        );
+
+    const previousLevel =
+        Number(
+            monster.level ||
+            1
+        );
+
+    const createdAt =
+        new Date()
+            .toISOString();
+
+    dividendHistory.push({
+        id:
+            createAppId(
+                "history"
+            ),
+
+        stockCode,
+
+        stockName:
+            String(
+                master?.name ||
+                stockCode
+            ),
+
+        amount:
+            Math.round(
+                amount
+            ),
+
+        date,
+
+        memo:
+            memo ||
+            "手動記録",
+
+        source:
+            "manual-record",
+
+        gainedExp,
+
+        currency:
+            "JPY",
+
+        exchangeRate:
+            1,
+
+        estimated:
+            false,
+
+        createdAt
+    });
+
+    monster.exp =
+        Math.max(
+            0,
+            Number(
+                monster.exp ||
+                0
+            )
+        ) +
+        gainedExp;
+
+    updateMonsterLevel();
+
+    saveData();
+
+    if (
+        dividendDialog &&
+        typeof dividendDialog.close ===
+            "function"
+    ) {
+
+        dividendDialog.close();
+
+    }
+
+    render();
+
+    const levelUpMessage =
+        Number(
+            monster.level
+        ) >
+        previousLevel
+            ? ` Lv.${monster.level}になりました。`
+            : "";
+
+    showToast(
+        `${master?.name || stockCode}の配当を記録しました。＋${gainedExp} EXP${levelUpMessage}`
+    );
+
+}
+
+
+// ========================================
+// 履歴削除
+// ========================================
+
+function deleteDividendHistory(
+    historyId
+) {
+
+    const record =
+        dividendHistory.find(
+            item =>
+                item.id ===
+                historyId
+        );
+
+    if (!record) {
+
+        return;
+
+    }
+
+    const confirmed =
+        window.confirm(
+            "この配当記録を削除しますか？"
+        );
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+    dividendHistory =
+        dividendHistory.filter(
+            item =>
+                item.id !==
+                historyId
+        );
+
+    if (
+        record.scheduleKey
+    ) {
+
+        harvestedDividends =
+            harvestedDividends.filter(
+                item =>
+                    createDividendScheduleKey(
+                        item.code,
+                        item.paymentDate
+                    ) !==
+                    record.scheduleKey
+            );
+
+    }
+
+    generateUpcomingDividends();
+
+    saveData();
+
+    render();
+
+    showToast(
+        "配当記録を削除しました。"
+    );
+
+}
+
+
+// ========================================
+// 履歴全削除
+// ========================================
+
+function clearDividendHistory() {
+
+    if (
+        dividendHistory.length === 0
+    ) {
+
+        showToast(
+            "削除する配当履歴はありません。"
+        );
+
+        return;
+
+    }
+
+    const confirmed =
+        window.confirm(
+            "配当履歴をすべて削除しますか？"
+        );
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+    dividendHistory =
+        [];
+
+    harvestedDividends =
+        [];
+
+    generateUpcomingDividends();
+
+    saveData();
+
+    render();
+
+    showToast(
+        "配当履歴をすべて削除しました。"
+    );
+
+}
+
+
+// ========================================
+// 配当履歴表示
 // ========================================
 
 function renderHistory() {
@@ -5328,11 +6170,11 @@ function renderHistory() {
             <div class="empty-state compact">
 
                 <h3>
-                    まだ収穫がありません
+                    配当履歴はまだありません
                 </h3>
 
                 <p>
-                    配当を収穫すると記録されます。
+                    配当を収穫または記録すると、ここに表示されます。
                 </p>
 
             </div>
@@ -5345,62 +6187,155 @@ function renderHistory() {
     const history =
         [...dividendHistory]
             .sort(
-                (a, b) =>
-                    (
-                        parseScheduleDate(
-                            b.date
-                        )?.getTime() || 0
-                    ) -
-                    (
+                (a, b) => {
+
+                    const dateA =
                         parseScheduleDate(
                             a.date
-                        )?.getTime() || 0
-                    )
+                        );
+
+                    const dateB =
+                        parseScheduleDate(
+                            b.date
+                        );
+
+                    const dateDifference =
+                        (
+                            dateB?.getTime() ||
+                            0
+                        ) -
+                        (
+                            dateA?.getTime() ||
+                            0
+                        );
+
+                    if (
+                        dateDifference !==
+                        0
+                    ) {
+
+                        return dateDifference;
+
+                    }
+
+                    return (
+                        new Date(
+                            b.createdAt ||
+                            0
+                        ).getTime() -
+                        new Date(
+                            a.createdAt ||
+                            0
+                        ).getTime()
+                    );
+
+                }
             );
 
     dividendHistoryList.innerHTML =
         history
-            .map(item => `
-                <article class="history-card">
+            .map(
+                item => {
 
-                    <div class="history-main">
+                    const sourceLabel =
+                        item.source ===
+                        "manual-record"
+                            ? "手動記録"
+                            : "収穫";
 
-                        <h3>
-                            ${escapeHtml(
-                                item.stockName ||
-                                item.stockCode ||
-                                "名称未登録"
-                            )}
-                        </h3>
+                    return `
+                        <article class="history-card">
 
-                        <p class="history-meta">
-                            ${formatDate(item.date)}
-                            ${
-                                Number(
-                                    item.gainedExp || 0
-                                ) > 0
-                                    ? `・＋${Number(
-                                        item.gainedExp
-                                    )}EXP`
-                                    : ""
-                            }
-                        </p>
+                            <div class="history-main">
 
-                    </div>
+                                <h3>
+                                    ${escapeHtml(
+                                        item.stockName ||
+                                        item.stockCode ||
+                                        "名称未登録"
+                                    )}
+                                </h3>
 
-                    <strong class="history-amount">
-                        ¥${formatYen(item.amount)}
-                    </strong>
+                                <p class="history-meta">
+                                    ${formatDate(
+                                        item.date
+                                    )}
+                                    ・
+                                    ${sourceLabel}
 
-                </article>
-            `)
+                                    ${
+                                        item.memo
+                                            ? `・${escapeHtml(
+                                                item.memo
+                                            )}`
+                                            : ""
+                                    }
+
+                                    ${
+                                        Number(
+                                            item.gainedExp ||
+                                            0
+                                        ) >
+                                        0
+                                            ? `・＋${formatNumber(
+                                                item.gainedExp
+                                            )} EXP`
+                                            : ""
+                                    }
+                                </p>
+
+                            </div>
+
+                            <strong class="history-amount">
+                                ¥${formatYen(
+                                    item.amount
+                                )}
+                            </strong>
+
+                            <button
+                                class="history-delete-button"
+                                type="button"
+                                data-delete-history="${escapeHtml(
+                                    item.id
+                                )}"
+                            >
+                                削除
+                            </button>
+
+                        </article>
+                    `;
+
+                }
+            )
             .join("");
+
+    dividendHistoryList
+        .querySelectorAll(
+            "[data-delete-history]"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        deleteDividendHistory(
+                            button.dataset
+                                .deleteHistory
+                        );
+
+                    }
+                );
+
+            }
+        );
 
 }
 
 
 // ========================================
-// 今日の収穫カード
+// 今日の収穫表示
 // ========================================
 
 function renderHarvest() {
@@ -5440,7 +6375,7 @@ function renderHarvest() {
 
         card.innerHTML = `
             <h3>
-                今日は収穫はありません
+                本日の収穫はありません
             </h3>
 
             <p>
@@ -5448,18 +6383,18 @@ function renderHarvest() {
                     next
                         ? `次回は${escapeHtml(
                             next.name
-                        )}の配当予定です。`
-                        : "次の配当予定はありません。"
+                        )}の配当を予定しています。`
+                        : "次回の配当予定はありません。"
                 }
             </p>
 
             <small>
                 ${
                     next
-                        ? formatDate(
+                        ? `予想収穫日：${formatDate(
                             next.paymentDate
-                        )
-                        : "銘柄を登録してください"
+                        )}`
+                        : "銘柄を登録すると予想配当を表示します。"
                 }
             </small>
         `;
@@ -5470,128 +6405,651 @@ function renderHarvest() {
 
     const total =
         harvestable.reduce(
-            (sum, item) =>
+            (
+                sum,
+                item
+            ) =>
                 sum +
-                Number(item.amount || 0),
+                Math.max(
+                    0,
+                    Number(
+                        item.amount ||
+                        0
+                    )
+                ),
             0
         );
 
     card.innerHTML = `
         <h3>
-            🌳 今日収穫できます
+            本日は${harvestable.length}件の配当を収穫できます
         </h3>
 
         <p>
-            合計
+            予想合計
             <strong>
-                ¥${formatYen(total)}
+                ¥${formatYen(
+                    total
+                )}
             </strong>
         </p>
 
         ${harvestable
-            .map(item => `
-                <div class="harvest-item">
+            .map(
+                item => `
+                    <div class="harvest-item">
 
-                    <span>
-                        ${escapeHtml(item.name)}
-                    </span>
+                        <span>
+                            ${escapeHtml(
+                                item.name
+                            )}
 
-                    <strong>
-                        ¥${formatYen(item.amount)}
-                    </strong>
+                            <small>
+                                ${formatDate(
+                                    item.paymentDate
+                                )}
+                            </small>
+                        </span>
 
-                </div>
-            `)
+                        <strong>
+                            ¥${formatYen(
+                                item.amount
+                            )}
+                        </strong>
+
+                    </div>
+                `
+            )
             .join("")}
 
         <button
+            id="harvestAllButton"
             class="primary-button"
             type="button"
-            onclick="harvestAll()"
         >
             まとめて収穫
         </button>
+    `;
+
+    document
+        .getElementById(
+            "harvestAllButton"
+        )
+        ?.addEventListener(
+            "click",
+            harvestAll
+        );
+
+}
+
+
+// ========================================
+// 生活費ダイアログ
+// ========================================
+
+function openExpenseDialog() {
+
+    if (housingExpense) {
+
+        housingExpense.value =
+            Number(
+                expenses.housing ||
+                0
+            ) ||
+            "";
+
+    }
+
+    if (foodExpense) {
+
+        foodExpense.value =
+            Number(
+                expenses.food ||
+                0
+            ) ||
+            "";
+
+    }
+
+    if (utilityExpense) {
+
+        utilityExpense.value =
+            Number(
+                expenses.utility ||
+                0
+            ) ||
+            "";
+
+    }
+
+    if (communicationExpense) {
+
+        communicationExpense.value =
+            Number(
+                expenses.communication ||
+                0
+            ) ||
+            "";
+
+    }
+
+    if (otherExpense) {
+
+        otherExpense.value =
+            Number(
+                expenses.other ||
+                0
+            ) ||
+            "";
+
+    }
+
+    if (
+        expenseDialog &&
+        typeof expenseDialog.showModal ===
+            "function"
+    ) {
+
+        expenseDialog.showModal();
+
+    }
+
+}
+
+
+// ========================================
+// 生活費保存
+// ========================================
+
+function submitExpenseForm(event) {
+
+    event.preventDefault();
+
+    expenses = {
+        housing:
+            Math.max(
+                0,
+                Number(
+                    housingExpense?.value ||
+                    0
+                )
+            ),
+
+        food:
+            Math.max(
+                0,
+                Number(
+                    foodExpense?.value ||
+                    0
+                )
+            ),
+
+        utility:
+            Math.max(
+                0,
+                Number(
+                    utilityExpense?.value ||
+                    0
+                )
+            ),
+
+        communication:
+            Math.max(
+                0,
+                Number(
+                    communicationExpense?.value ||
+                    0
+                )
+            ),
+
+        other:
+            Math.max(
+                0,
+                Number(
+                    otherExpense?.value ||
+                    0
+                )
+            )
+    };
+
+    saveData();
+
+    if (
+        expenseDialog &&
+        typeof expenseDialog.close ===
+            "function"
+    ) {
+
+        expenseDialog.close();
+
+    }
+
+    render();
+
+    showToast(
+        "生活費を保存しました。"
+    );
+
+}
+
+
+// ========================================
+// 生活費表示
+// ========================================
+
+function renderExpenses() {
+
+    if (!expenseList) {
+
+        return;
+
+    }
+
+    const monthlyExpense =
+        calculateMonthlyExpense();
+
+    if (
+        monthlyExpense <= 0
+    ) {
+
+        expenseList.innerHTML = `
+            <div class="empty-state compact">
+
+                <h3>
+                    生活費を登録してください
+                </h3>
+
+                <p>
+                    年間予想配当が生活費をどこまでカバーするか表示します。
+                </p>
+
+            </div>
+        `;
+
+        return;
+
+    }
+
+    const annualDividend =
+        calculateAnnualDividend();
+
+    const coverageRate =
+        calculateFreedomRate();
+
+    const expenseItems = [
+        {
+            label:
+                "住居費",
+
+            value:
+                Number(
+                    expenses.housing ||
+                    0
+                )
+        },
+        {
+            label:
+                "食費",
+
+            value:
+                Number(
+                    expenses.food ||
+                    0
+                )
+        },
+        {
+            label:
+                "光熱費",
+
+            value:
+                Number(
+                    expenses.utility ||
+                    0
+                )
+        },
+        {
+            label:
+                "通信費",
+
+            value:
+                Number(
+                    expenses.communication ||
+                    0
+                )
+        },
+        {
+            label:
+                "その他",
+
+            value:
+                Number(
+                    expenses.other ||
+                    0
+                )
+        }
+    ];
+
+    expenseList.innerHTML = `
+        <article class="expense-card">
+
+            <div class="expense-top">
+
+                <h3>
+                    月間生活費
+                </h3>
+
+                <strong
+                    class="expense-rate ${
+                        coverageRate >=
+                        100
+                            ? "complete"
+                            : ""
+                    }"
+                >
+                    ${coverageRate.toFixed(
+                        1
+                    )}%
+                </strong>
+
+            </div>
+
+            <p class="expense-values">
+                月間生活費：
+                ¥${formatYen(
+                    monthlyExpense
+                )}
+
+                <br>
+
+                年間生活費：
+                ¥${formatYen(
+                    monthlyExpense *
+                    12
+                )}
+
+                <br>
+
+                年間予想配当：
+                ¥${formatYen(
+                    annualDividend
+                )}
+            </p>
+
+            <div class="expense-track">
+
+                <div
+                    class="expense-progress"
+                    style="width:${Math.min(
+                        coverageRate,
+                        100
+                    )}%"
+                ></div>
+
+            </div>
+
+        </article>
+
+        ${expenseItems
+            .filter(
+                item =>
+                    item.value >
+                    0
+            )
+            .map(
+                item => `
+                    <article class="history-card">
+
+                        <div class="history-main">
+
+                            <h3>
+                                ${item.label}
+                            </h3>
+
+                            <p class="history-meta">
+                                月額
+                            </p>
+
+                        </div>
+
+                        <strong class="history-amount">
+                            ¥${formatYen(
+                                item.value
+                            )}
+                        </strong>
+
+                    </article>
+                `
+            )
+            .join("")}
     `;
 
 }
 
 
 // ========================================
-// ポートフォリオ操作の初期化
+// Part6操作初期化
 // ========================================
 
 function initializePortfolioControls() {
 
-    const openButton =
+    const openStockFormButton =
         document.getElementById(
             "openStockFormButton"
         );
 
+    const openDividendFormButton =
+        document.getElementById(
+            "openDividendFormButton"
+        );
+
+    const openDividendHistoryButton =
+        document.getElementById(
+            "openDividendHistoryButton"
+        );
+
+    const clearDividendHistoryButton =
+        document.getElementById(
+            "clearDividendHistoryButton"
+        );
+
+    const openExpenseFormButton =
+        document.getElementById(
+            "openExpenseFormButton"
+        );
+
     if (
-        openButton &&
-        openButton.dataset.initialized !==
+        openStockFormButton &&
+        openStockFormButton.dataset
+            .initialized !==
         "true"
     ) {
 
-        openButton.dataset.initialized =
+        openStockFormButton.dataset
+            .initialized =
             "true";
 
-        openButton.addEventListener(
-            "click",
-            openNewStockDialog
-        );
+        openStockFormButton
+            .addEventListener(
+                "click",
+                openNewStockDialog
+            );
+
+    }
+
+    if (
+        openDividendFormButton &&
+        openDividendFormButton.dataset
+            .initialized !==
+        "true"
+    ) {
+
+        openDividendFormButton.dataset
+            .initialized =
+            "true";
+
+        openDividendFormButton
+            .addEventListener(
+                "click",
+                openDividendDialog
+            );
+
+    }
+
+    if (
+        openDividendHistoryButton &&
+        openDividendHistoryButton.dataset
+            .initialized !==
+        "true"
+    ) {
+
+        openDividendHistoryButton.dataset
+            .initialized =
+            "true";
+
+        openDividendHistoryButton
+            .addEventListener(
+                "click",
+                openDividendDialog
+            );
+
+    }
+
+    if (
+        clearDividendHistoryButton &&
+        clearDividendHistoryButton.dataset
+            .initialized !==
+        "true"
+    ) {
+
+        clearDividendHistoryButton.dataset
+            .initialized =
+            "true";
+
+        clearDividendHistoryButton
+            .addEventListener(
+                "click",
+                clearDividendHistory
+            );
+
+    }
+
+    if (
+        openExpenseFormButton &&
+        openExpenseFormButton.dataset
+            .initialized !==
+        "true"
+    ) {
+
+        openExpenseFormButton.dataset
+            .initialized =
+            "true";
+
+        openExpenseFormButton
+            .addEventListener(
+                "click",
+                openExpenseDialog
+            );
 
     }
 
     if (
         stockCodeInput &&
-        stockCodeInput.dataset.initialized !==
+        stockCodeInput.dataset
+            .initialized !==
         "true"
     ) {
 
-        stockCodeInput.dataset.initialized =
+        stockCodeInput.dataset
+            .initialized =
             "true";
 
-        stockCodeInput.addEventListener(
-            "input",
-            updateStockPreview
-        );
+        stockCodeInput
+            .addEventListener(
+                "input",
+                updateStockPreview
+            );
 
     }
 
     if (
         stockForm &&
-        stockForm.dataset.initialized !==
+        stockForm.dataset
+            .initialized !==
         "true"
     ) {
 
-        stockForm.dataset.initialized =
+        stockForm.dataset
+            .initialized =
             "true";
 
-        stockForm.addEventListener(
-            "submit",
-            submitStockForm
-        );
+        stockForm
+            .addEventListener(
+                "submit",
+                submitStockForm
+            );
 
     }
 
     if (
         stockSort &&
-        stockSort.dataset.initialized !==
+        stockSort.dataset
+            .initialized !==
         "true"
     ) {
 
-        stockSort.dataset.initialized =
+        stockSort.dataset
+            .initialized =
             "true";
 
-        stockSort.addEventListener(
-            "change",
-            renderPortfolio
-        );
+        stockSort
+            .addEventListener(
+                "change",
+                renderPortfolio
+            );
+
+    }
+
+    if (
+        dividendForm &&
+        dividendForm.dataset
+            .initialized !==
+        "true"
+    ) {
+
+        dividendForm.dataset
+            .initialized =
+            "true";
+
+        dividendForm
+            .addEventListener(
+                "submit",
+                submitDividendForm
+            );
+
+    }
+
+    if (
+        expenseForm &&
+        expenseForm.dataset
+            .initialized !==
+        "true"
+    ) {
+
+        expenseForm.dataset
+            .initialized =
+            "true";
+
+        expenseForm
+            .addEventListener(
+                "submit",
+                submitExpenseForm
+            );
 
     }
 
     renderStockSuggestions();
+
+    renderDividendStockOptions();
 
 }
 // ========================================
