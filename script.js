@@ -7053,301 +7053,676 @@ function initializePortfolioControls() {
 
 }
 // ========================================
-// Dividend Monsters Ver4.0
+// Dividend Monsters Ver5.0
 // Part 7 / 8
 // Utility + Exchange Rate + Notifications
 // ========================================
 
+
+// ========================================
+// 為替取得設定
+// ========================================
+
+const EXCHANGE_RATE_URL =
+    "https://open.er-api.com/v6/latest/USD";
+
+const EXCHANGE_RATE_TIMEOUT =
+    8000;
+
+
+// ========================================
+// タイムアウト付きfetch
+// ========================================
+
+async function fetchWithTimeout(
+    url,
+    options = {},
+    timeout =
+        EXCHANGE_RATE_TIMEOUT
+) {
+
+    const controller =
+        new AbortController();
+
+    const timer =
+        window.setTimeout(
+            () => {
+
+                controller.abort();
+
+            },
+            timeout
+        );
+
+    try {
+
+        return await fetch(
+            url,
+            {
+                ...options,
+
+                signal:
+                    controller.signal
+            }
+        );
+
+    } finally {
+
+        window.clearTimeout(
+            timer
+        );
+
+    }
+
+}
+
+
 // ========================================
 // 為替レート更新
+// 取得失敗時は保存済みレートを維持
 // ========================================
 
-async function updateExchangeRate(){
+async function updateExchangeRate() {
 
-    try{
+    try {
 
-        const response=
-
-            await fetch(
-
-                "https://open.er-api.com/v6/latest/USD"
-
+        const response =
+            await fetchWithTimeout(
+                EXCHANGE_RATE_URL,
+                {
+                    cache:
+                        "no-store"
+                }
             );
 
-        const json=
+        if (!response.ok) {
 
+            throw new Error(
+                `為替取得失敗 HTTP ${response.status}`
+            );
+
+        }
+
+        const data =
             await response.json();
 
-        if(json.result==="success"){
+        const rate =
+            Number(
+                data?.rates?.JPY
+            );
 
-            settings.exchangeRate=
+        if (
+            data?.result !==
+                "success" ||
+            !Number.isFinite(
+                rate
+            ) ||
+            rate <= 0
+        ) {
 
-                Number(json.rates.JPY);
-
-            settings.lastRateUpdate=
-
-                new Date().toISOString();
-
-            saveData();
+            throw new Error(
+                "為替データの形式が正しくありません。"
+            );
 
         }
 
-    }catch(error){
+        settings.exchangeRate =
+            rate;
 
-        console.warn(
+        settings.lastRateUpdate =
+            new Date()
+                .toISOString();
 
-            "為替取得失敗"
+        saveData();
 
-        );
+        return true;
+
+    } catch (error) {
+
+        if (
+            error?.name ===
+            "AbortError"
+        ) {
+
+            console.warn(
+                "為替レートの取得がタイムアウトしました。保存済みレートを使用します。"
+            );
+
+        } else {
+
+            console.warn(
+                "為替レートを更新できませんでした。保存済みレートを使用します。",
+                error
+            );
+
+        }
+
+        return false;
 
     }
 
 }
 
+
 // ========================================
-// 毎日更新判定
+// 為替更新日判定
+// 1日1回だけ取得
 // ========================================
 
-async function checkExchangeRate(){
+async function checkExchangeRate() {
 
-    const today=
-
-        getLocalDateString(
-
+    const today =
+        getScheduleDateString(
             new Date()
-
         );
 
-    const updated=
-
-        settings.lastRateUpdate
-
-        ?
-
-        getLocalDateString(
-
-            new Date(
-
-                settings.lastRateUpdate
-
-            )
-
-        )
-
-        :
-
+    let lastUpdatedDate =
         "";
 
-    if(today!==updated){
+    if (
+        settings.lastRateUpdate
+    ) {
 
-        await updateExchangeRate();
-
-    }
-
-}
-
-// ========================================
-// 通知
-// ========================================
-
-function showHarvestNotification(){
-
-    if(
-
-        !settings.notifications
-
-    ){
-
-        return;
-
-    }
-
-    const harvest=
-
-        getHarvestableDividends();
-
-    if(
-
-        harvest.length===0
-
-    ){
-
-        return;
-
-    }
-
-    showToast(
-
-        `🌳 今日は${harvest.length}件収穫できます`
-
-    );
-
-}
-
-// ========================================
-// 今日のメッセージ
-// ========================================
-
-function getDailyMessage(){
-
-    const harvest=
-
-        getHarvestableDividends();
-
-    if(harvest.length){
-
-        return "🌳今日は収穫日です！";
-
-    }
-
-    const next=
-
-        getNextDividend();
-
-    if(next){
-
-        const days=
-
-            daysUntil(
-
-                next.paymentDate
-
+        const lastUpdated =
+            new Date(
+                settings.lastRateUpdate
             );
 
-        return `📅 次の収穫まであと${days}日`;
+        if (
+            !Number.isNaN(
+                lastUpdated.getTime()
+            )
+        ) {
 
-    }
-
-    if(portfolio.length===0){
-
-        return "📈 最初の銘柄を登録しましょう";
-
-    }
-
-    return "🐲 今日もコツコツ育てよう";
-
-}
-
-// ========================================
-// トースト
-// ========================================
-
-function showToast(message){
-
-    const toast=
-
-        document.getElementById(
-
-            "toast"
-
-        );
-
-    if(!toast){
-
-        return;
-
-    }
-
-    toast.textContent=
-
-        message;
-
-    toast.classList.add(
-
-        "show"
-
-    );
-
-    clearTimeout(
-
-        showToast.timer
-
-    );
-
-    showToast.timer=
-
-        setTimeout(()=>{
-
-            toast.classList.remove(
-
-                "show"
-
-            );
-
-        },2500);
-
-}
-
-// ========================================
-// 数値フォーマット
-// ========================================
-
-function formatYen(value){
-
-    return Math.round(
-
-        Number(value)||0
-
-    ).toLocaleString("ja-JP");
-
-}
-
-function formatNumber(value){
-
-    return Number(
-
-        value||0
-
-    ).toLocaleString(
-
-        "ja-JP",
-
-        {
-
-            maximumFractionDigits:2
+            lastUpdatedDate =
+                getScheduleDateString(
+                    lastUpdated
+                );
 
         }
 
+    }
+
+    if (
+        today ===
+        lastUpdatedDate
+    ) {
+
+        return false;
+
+    }
+
+    return await updateExchangeRate();
+
+}
+
+
+// ========================================
+// 収穫通知
+// ========================================
+
+function showHarvestNotification() {
+
+    if (
+        settings.notifications !==
+        true
+    ) {
+
+        return;
+
+    }
+
+    const harvestable =
+        getHarvestableDividends();
+
+    if (
+        harvestable.length ===
+        0
+    ) {
+
+        return;
+
+    }
+
+    const total =
+        harvestable.reduce(
+            (
+                sum,
+                item
+            ) =>
+                sum +
+                Math.max(
+                    0,
+                    Number(
+                        item.amount ||
+                        0
+                    )
+                ),
+            0
+        );
+
+    showToast(
+        `本日は${harvestable.length}件、¥${formatYen(total)}の配当を収穫できます。`
     );
 
 }
 
-function formatDate(date){
 
-    return new Date(date)
+// ========================================
+// 本日の案内
+// ========================================
 
-        .toLocaleDateString(
+function getDailyMessage() {
 
-            "ja-JP",
+    const harvestable =
+        getHarvestableDividends();
 
-            {
+    if (
+        harvestable.length >
+        0
+    ) {
 
-                year:"numeric",
+        return `本日は${harvestable.length}件の配当を収穫できます。`;
 
-                month:"short",
+    }
 
-                day:"numeric"
+    const nextDividend =
+        getNextDividend();
 
-            }
+    if (
+        nextDividend
+    ) {
 
+        const remainingDays =
+            daysUntil(
+                nextDividend
+                    .paymentDate
+            );
+
+        if (
+            remainingDays ===
+            1
+        ) {
+
+            return "次の予想収穫日は明日です。";
+
+        }
+
+        return `次の予想収穫日まであと${remainingDays}日です。`;
+
+    }
+
+    if (
+        portfolio.length ===
+        0
+    ) {
+
+        return "銘柄を登録すると予想配当を表示します。";
+
+    }
+
+    return "次回の配当予定を確認しています。";
+
+}
+
+
+// ========================================
+// トースト表示
+// ========================================
+
+function showToast(
+    message,
+    duration = 2800
+) {
+
+    const toast =
+        document.getElementById(
+            "toast"
+        );
+
+    if (!toast) {
+
+        return;
+
+    }
+
+    toast.textContent =
+        String(
+            message || ""
+        );
+
+    toast.classList.add(
+        "show"
+    );
+
+    window.clearTimeout(
+        showToast.timer
+    );
+
+    showToast.timer =
+        window.setTimeout(
+            () => {
+
+                toast.classList.remove(
+                    "show"
+                );
+
+            },
+            Math.max(
+                1000,
+                Number(
+                    duration ||
+                    2800
+                )
+            )
         );
 
 }
 
-function getLocalDateString(date){
 
-    return date
+// ========================================
+// 円表示
+// ========================================
 
-        .toISOString()
+function formatYen(value) {
 
-        .slice(0,10);
+    const numericValue =
+        Number(
+            value || 0
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+
+        return "0";
+
+    }
+
+    return Math.round(
+        numericValue
+    )
+        .toLocaleString(
+            "ja-JP"
+        );
 
 }
 
+
 // ========================================
-// 起動時処理
+// 一般数値表示
 // ========================================
 
+function formatNumber(
+    value,
+    maximumFractionDigits = 2
+) {
+
+    const numericValue =
+        Number(
+            value || 0
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+
+        return "0";
+
+    }
+
+    return numericValue
+        .toLocaleString(
+            "ja-JP",
+            {
+                maximumFractionDigits:
+                    Math.max(
+                        0,
+                        Number(
+                            maximumFractionDigits ||
+                            0
+                        )
+                    )
+            }
+        );
+
+}
+
+
+// ========================================
+// 日付表示
+// YYYY-MM-DDをローカル日付として表示
+// ========================================
+
+function formatDate(dateValue) {
+
+    let date =
+        null;
+
+    if (
+        typeof dateValue ===
+        "string"
+    ) {
+
+        date =
+            parseScheduleDate(
+                dateValue
+            );
+
+    }
+
+    if (
+        !date &&
+        dateValue instanceof
+            Date
+    ) {
+
+        date =
+            dateValue;
+
+    }
+
+    if (!date) {
+
+        const parsedDate =
+            new Date(
+                dateValue
+            );
+
+        if (
+            !Number.isNaN(
+                parsedDate.getTime()
+            )
+        ) {
+
+            date =
+                parsedDate;
+
+        }
+
+    }
+
+    if (
+        !date ||
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "日付未設定";
+
+    }
+
+    return date
+        .toLocaleDateString(
+            "ja-JP",
+            {
+                year:
+                    "numeric",
+
+                month:
+                    "short",
+
+                day:
+                    "numeric"
+            }
+        );
+
+}
+
+
+// ========================================
+// ローカル日付文字列
+// ========================================
+
+function getLocalDateString(
+    date =
+        new Date()
+) {
+
+    if (
+        !(date instanceof Date) ||
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return "";
+
+    }
+
+    return getScheduleDateString(
+        date
+    );
+
+}
+
+
+// ========================================
+// 割合を安全に制限
+// ========================================
+
+function clampPercentage(
+    value
+) {
+
+    const numericValue =
+        Number(
+            value || 0
+        );
+
+    if (
+        !Number.isFinite(
+            numericValue
+        )
+    ) {
+
+        return 0;
+
+    }
+
+    return Math.min(
+        100,
+        Math.max(
+            0,
+            numericValue
+        )
+    );
+
+}
+
+
+// ========================================
+// ダイアログを安全に開く
+// ========================================
+
+function openDialogSafely(
+    dialog
+) {
+
+    if (
+        !dialog ||
+        typeof dialog.showModal !==
+            "function"
+    ) {
+
+        return false;
+
+    }
+
+    if (
+        dialog.open
+    ) {
+
+        return true;
+
+    }
+
+    dialog.showModal();
+
+    return true;
+
+}
+
+
+// ========================================
+// ダイアログを安全に閉じる
+// ========================================
+
+function closeDialogSafely(
+    dialog
+) {
+
+    if (
+        !dialog ||
+        typeof dialog.close !==
+            "function"
+    ) {
+
+        return false;
+
+    }
+
+    if (
+        !dialog.open
+    ) {
+
+        return true;
+
+    }
+
+    dialog.close();
+
+    return true;
+
+}
+
+
+// ========================================
+// 保存状態の確認
+// ========================================
+
+function saveAndNotifyOnFailure() {
+
+    const saved =
+        saveData();
+
+    if (!saved) {
+
+        showToast(
+            "データを保存できませんでした。ブラウザの保存設定を確認してください。",
+            4000
+        );
+
+    }
+
+    return saved;
+
+}
 // ========================================
 // Dividend Monsters Ver4.2
 // Part 8 / 8
